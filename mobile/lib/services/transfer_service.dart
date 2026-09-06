@@ -169,6 +169,15 @@ class TransferService extends ChangeNotifier {
         case 'disconnected':
           disconnect(sendSignal: false);
           break;
+        case 'cancelled':
+          if (_ackCompleter != null && !_ackCompleter!.isCompleted) {
+            _ackCompleter!.completeError(StateError('cancelled'));
+          }
+          if (_readyCompleter != null && !_readyCompleter!.isCompleted) {
+            _readyCompleter!.completeError(StateError('cancelled'));
+          }
+          _cancelCurrentReceive(notify: true);
+          break;
         case 'error':
           _errorController.add(data['message'] as String? ?? 'Unknown error');
           if (_readyCompleter != null && !_readyCompleter!.isCompleted) _readyCompleter!.completeError(StateError(data['message'] as String? ?? 'Unknown error'));
@@ -177,6 +186,27 @@ class TransferService extends ChangeNotifier {
       }
     } catch (e) {
       _errorController.add('Failed to parse message: $e');
+    }
+  }
+
+  Future<void> _cancelCurrentReceive({bool notify = false}) async {
+    _chunkBuffer.clear();
+    if (_tempSink != null || _tempFile != null) {
+      try {
+        await _tempSink?.flush();
+        await _tempSink?.close();
+      } catch (_) {}
+      if (_tempFile != null && await _tempFile!.exists()) {
+        try {
+          await _tempFile!.delete();
+        } catch (_) {}
+      }
+      _tempSink = null;
+      _tempFile = null;
+    }
+    if (notify) {
+      _progressController.add(null);
+      notifyListeners();
     }
   }
 
@@ -202,16 +232,7 @@ class TransferService extends ChangeNotifier {
   Future<void> _handleTransferInit(Map<String, dynamic> data) async {
     if (_tempSink != null || _tempFile != null) {
       _errorController.add('A transfer is already in progress, cancelling previous.');
-      try {
-        await _tempSink?.close();
-      } catch (_) {}
-      if (_tempFile != null && await _tempFile!.exists()) {
-        try {
-          await _tempFile!.delete();
-        } catch (_) {}
-      }
-      _tempSink = null;
-      _tempFile = null;
+      await _cancelCurrentReceive(notify: false);
     }
 
     _currentFileName = data['filename'] as String? ?? 'unknown';
@@ -315,7 +336,8 @@ class TransferService extends ChangeNotifier {
       }
     } catch (e) {
       _errorController.add('Decryption failed: $e');
-      disconnect(sendSignal: true);
+      _channel?.sink.add(json.encode({'type': 'cancelled'}));
+      _cancelCurrentReceive(notify: true);
     }
   }
 
