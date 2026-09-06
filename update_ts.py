@@ -11,4 +11,5 @@ def update_file(file_path, ts_path, var_name):
 
 update_file('webapp/index.html', 'worker/src/index_html.ts', 'INDEX_HTML')
 update_file('webapp/phone.html', 'worker/src/phone_html.ts', 'PHONE_HTML')
+update_file('webapp/install.html', 'worker/src/install_html.ts', 'INSTALL_HTML')
 update_file('webapp/sw.js', 'worker/src/sw_js.ts', 'SW_JS')
