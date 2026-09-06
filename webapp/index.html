@@ -2124,95 +2124,108 @@
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
           state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
         }
+      } catch (err) {
+        console.error('Failed to decrypt incoming chunk:', err);
+        state.currentTransfer = null;
+        if (state.transferStallTimer) {
+          clearTimeout(state.transferStallTimer);
+          state.transferStallTimer = null;
+        }
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'cancelled' }));
+        }
+        if (state.sendQueue.length > 0) {
+          processNextInQueue();
+        } else {
+          setPhase('paired');
+          updateQueueDisplay();
+          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (ERROR)`);
+        }
+        return;
+      }
 
-        // Fix 4: Transfer stall timer watchdog
-        if (state.transferStallTimer) clearTimeout(state.transferStallTimer);
-        state.transferStallTimer = setTimeout(() => {
-          if (state.currentTransfer && state.currentTransfer.direction === 'receiving') {
-            const received = state.currentTransfer.receivedChunks;
-            const total = state.currentTransfer.total_chunks;
-            console.warn(`Transfer stalled at ${received}/${total} chunks`);
-            state.currentTransfer = null;
-            if (state.transferStallTimer) {
-              clearTimeout(state.transferStallTimer);
-              state.transferStallTimer = null;
-            }
-            setPhase('paired');
-            setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (STALLED — RETRY)`);
-          }
-        }, 15000);
-
-        if (receivedCount >= transfer.total_chunks) {
-          const t = state.currentTransfer;
-          if (!t || t.direction !== 'receiving') return;
-
-          const validChunks = t.chunksData.filter(Boolean);
-
-          if (validChunks.length !== t.total_chunks) {
-            // Still missing chunks — show error and reset
-            console.error(`Missing chunks: got ${validChunks.length}/${t.total_chunks}`);
-            state.currentTransfer = null;
-            if (state.sendQueue.length > 0) {
-              processNextInQueue();
-            } else {
-              setPhase('paired');
-              updateQueueDisplay();
-            }
-            setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (TRANSFER INCOMPLETE — RETRY)`);
-            return;
-          }
-
-          // Clear stall timer on successful completion
+      // Fix 4: Transfer stall timer watchdog
+      if (state.transferStallTimer) clearTimeout(state.transferStallTimer);
+      state.transferStallTimer = setTimeout(() => {
+        if (state.currentTransfer && state.currentTransfer.direction === 'receiving') {
+          const received = state.currentTransfer.receivedChunks;
+          const total = state.currentTransfer.total_chunks;
+          console.warn(`Transfer stalled at ${received}/${total} chunks`);
+          state.currentTransfer = null;
           if (state.transferStallTimer) {
             clearTimeout(state.transferStallTimer);
             state.transferStallTimer = null;
           }
+          setPhase('paired');
+          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (STALLED — RETRY)`);
+        }
+      }, 15000);
 
-          const finalBlob = new Blob(validChunks, { type: t.mime_type });
-          t.chunksData = null;
+      if (receivedCount >= transfer.total_chunks) {
+        const t = state.currentTransfer;
+        if (!t || t.direction !== 'receiving') return;
 
-          if (t.filename === 'message.txt' && t.size < 50 * 1024) {
-            finalBlob.text().then(text => {
-              appendChatMessage('PEER', text);
-              state.currentTransfer = null;
-              if (state.sendQueue.length > 0) {
-                processNextInQueue();
-              } else {
-                setPhase('paired');
-                updateQueueDisplay();
-                setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (LAST RECEIVED: ${t.filename})`);
-              }
-            });
-            return;
-          }
+        const validChunks = t.chunksData.filter(Boolean);
 
-          const blobUrl = URL.createObjectURL(finalBlob);
-          state.receivedFiles = state.receivedFiles || [];
-          state.receivedFiles.push({
-            filename: t.filename,
-            size: t.size,
-            mimeType: t.mime_type,
-            blobUrl: blobUrl
-          });
-          renderReceivedFiles();
-
+        if (validChunks.length !== t.total_chunks) {
+          // Still missing chunks — show error and reset
+          console.error(`Missing chunks: got ${validChunks.length}/${t.total_chunks}`);
           state.currentTransfer = null;
           if (state.sendQueue.length > 0) {
             processNextInQueue();
           } else {
             setPhase('paired');
             updateQueueDisplay();
-            setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (RECEIVED: ${t.filename})`);
-            const sec = document.getElementById('received-files-section');
-            if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
+          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (TRANSFER INCOMPLETE — RETRY)`);
           return;
         }
-      } catch (err) {
-        console.error('Failed to decrypt incoming chunk:', err);
-        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-          state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
+
+        // Clear stall timer on successful completion
+        if (state.transferStallTimer) {
+          clearTimeout(state.transferStallTimer);
+          state.transferStallTimer = null;
         }
+
+        const finalBlob = new Blob(validChunks, { type: t.mime_type });
+        t.chunksData = null;
+
+        if (t.filename === 'message.txt' && t.size < 50 * 1024) {
+          finalBlob.text().then(text => {
+            appendChatMessage('PEER', text);
+            state.currentTransfer = null;
+            if (state.sendQueue.length > 0) {
+              processNextInQueue();
+            } else {
+              setPhase('paired');
+              updateQueueDisplay();
+              setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (LAST RECEIVED: ${t.filename})`);
+            }
+          });
+          return;
+        }
+
+        const blobUrl = URL.createObjectURL(finalBlob);
+        state.receivedFiles = state.receivedFiles || [];
+        state.receivedFiles.push({
+          filename: t.filename,
+          size: t.size,
+          mimeType: t.mime_type,
+          blobUrl: blobUrl
+        });
+        renderReceivedFiles();
+
+        state.currentTransfer = null;
+        if (state.sendQueue.length > 0) {
+          processNextInQueue();
+        } else {
+          setPhase('paired');
+          updateQueueDisplay();
+          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (RECEIVED: ${t.filename})`);
+          const sec = document.getElementById('received-files-section');
+          if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return;
       }
     }
 
@@ -2786,8 +2799,15 @@
         }
       } catch (err) {
         console.error('Failed to decrypt incoming chunk on phone:', err);
+        phoneState.currentTransfer = null;
         if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
-          phoneState.ws.send(JSON.stringify({ type: 'ack', chunk_index: transfer.receivedChunks }));
+          phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+        }
+        if (phoneState.sendQueue.length > 0) {
+          phoneProcessNextInQueue();
+        } else {
+          phoneShowScreen('connected');
+          document.getElementById('phone-status-text').innerText = 'ERROR (DECRYPTION)';
         }
       }
     }
