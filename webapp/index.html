@@ -2157,8 +2157,16 @@
             clearTimeout(state.transferStallTimer);
             state.transferStallTimer = null;
           }
-          setPhase('paired');
-          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (STALLED — RETRY)`);
+          if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+            state.ws.send(JSON.stringify({ type: 'cancelled' }));
+          }
+          if (state.sendQueue.length > 0) {
+            processNextInQueue();
+          } else {
+            setPhase('paired');
+            updateQueueDisplay();
+            setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (STALLED — RETRY)`);
+          }
         }
       }, 15000);
 
