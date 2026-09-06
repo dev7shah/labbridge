@@ -920,11 +920,15 @@
           }
         }
       } else if (msg.type === 'cancelled') {
-        document.getElementById('section-transferring').style.display = 'none';
-        document.getElementById('card-connected').style.display = 'block';
         state.receiving = null;
         state.sending = null;
-        alert('Transfer cancelled');
+        clearSendWatchdog();
+        if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {
+          processNextPhoneSend();
+        } else {
+          document.getElementById('section-transferring').style.display = 'none';
+          document.getElementById('card-connected').style.display = 'block';
+        }
       } else if (msg.type === 'disconnected') {
         disconnectPhoneSession();
       }
@@ -960,11 +964,33 @@
         }
       } catch (err) {
         console.error('Decryption failed:', err);
-        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-          state.ws.send(JSON.stringify({ type: 'ack', chunk_index: state.receiving.received }));
+        state.receiving = null;
+        if (state.receiveWatchdog) {
+          clearTimeout(state.receiveWatchdog);
+          state.receiveWatchdog = null;
         }
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'cancelled' }));
+        }
+        if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {
+          processNextPhoneSend();
+        } else {
+          document.getElementById('section-transferring').style.display = 'none';
+          document.getElementById('card-connected').style.display = 'block';
+        }
+        return;
       }
-    }
+
+      if (state.receiveWatchdog) clearTimeout(state.receiveWatchdog);
+      state.receiveWatchdog = setTimeout(() => {
+        if (state.receiving) {
+          console.warn('Receive stalled — resetting');
+          state.receiving = null;
+          state.receiveWatchdog = null;
+          document.getElementById('section-transferring').style.display = 'none';
+          document.getElementById('card-connected').style.display = 'block';
+        }
+      }, 15000);
 
     function updateProgress(pct) {
       document.getElementById('transfer-pct').innerText = `${pct}%`;
@@ -978,6 +1004,10 @@
 
     async function finalizeReceivedFile() {
       const rec = state.receiving;
+      if (state.receiveWatchdog) {
+        clearTimeout(state.receiveWatchdog);
+        state.receiveWatchdog = null;
+      }
       document.getElementById('section-transferring').style.display = 'none';
       document.getElementById('card-connected').style.display = 'block';
       state.receiving = null;
