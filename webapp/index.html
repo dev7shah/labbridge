@@ -1123,7 +1123,7 @@
 
   <script>
     const isFileOrLocal = window.location.protocol === 'file:';
-    const WORKER_URL = window.CUEFLEX_WORKER_URL || window.CUEFLEX_WORKER_URL || (isFileOrLocal ? 'wss://cueflex.shahdev0710.workers.dev' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
+    const WORKER_URL = window.CUEFLEX_WORKER_URL || (isFileOrLocal ? 'wss://cueflex.shahdev0710.workers.dev' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
     const HTTP_URL = WORKER_URL.replace('ws://', 'http://').replace('wss://', 'https://');
 
     const state = {
@@ -1145,8 +1145,7 @@
     };
 
     const PHONE_MODE = new URLSearchParams(window.location.search).get('mode') === 'phone'
-      || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      || (navigator.maxTouchPoints > 0 && window.innerWidth <= 768);
+      || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     const PEER_SESSION_ID = new URLSearchParams(window.location.search).get('s');
 
@@ -1288,10 +1287,11 @@
     function recordMySessionHistory(sid) {
       if (!sid) return;
       try {
-        const list = JSON.parse(sessionStorage.getItem('cueflex_my_history') || '[]');
+        const list = JSON.parse(localStorage.getItem('cueflex_my_history') || '[]');
         if (!list.includes(sid)) {
           list.push(sid);
-          sessionStorage.setItem('cueflex_my_history', JSON.stringify(list));
+          if (list.length > 20) list.shift();
+          localStorage.setItem('cueflex_my_history', JSON.stringify(list));
         }
       } catch (e) {}
     }
@@ -1300,7 +1300,7 @@
       if (!sid) return false;
       if (sid === state.sessionId) return true;
       try {
-        const list = JSON.parse(sessionStorage.getItem('cueflex_my_history') || '[]');
+        const list = JSON.parse(localStorage.getItem('cueflex_my_history') || '[]');
         return list.includes(sid);
       } catch (e) {
         return false;
@@ -1319,7 +1319,7 @@
       try {
         recordMySessionHistory(state.sessionId);
         const currentSid = state.sessionId;
-        const history = (JSON.parse(sessionStorage.getItem('cueflex_my_history') || '[]')).join(',');
+        const history = (JSON.parse(localStorage.getItem('cueflex_my_history') || '[]')).join(',');
         const res = await fetch(`${HTTP_URL}/nearby?current=${currentSid}&ping=${currentSid}&excludes=${history}`);
         const data = await res.json();
         const devices = (data.devices || []).filter(d => !isMyHistorySession(d.session_id));
@@ -1548,7 +1548,9 @@
       }
     }
 
-    function handlePeerDisconnected() {
+    let reconnectAttempts = 0;
+
+    function handlePeerDisconnected(event) {
       if (state.phase === 'transferring') {
         alert('Peer disconnected during transfer.');
       }
@@ -1567,7 +1569,13 @@
         setTimeout(() => connectAsPeer(state.sessionId), 2000);
       } else if (state.phase === 'waiting') {
         // Reconnect silently if dropped while waiting (e.g. idle timeout)
-        setTimeout(connectWebSocket, 1000);
+        reconnectAttempts++;
+        if (reconnectAttempts > 3 || (event && event.code === 1008)) {
+          reconnectAttempts = 0;
+          createSession(true); // Force new session if server consistently rejects or limits
+        } else {
+          setTimeout(connectWebSocket, 1000);
+        }
       } else {
         setStatus(false, 'DISCONNECTED BY PEER');
         document.getElementById('btn-disconnect').style.display = 'none';
@@ -1602,6 +1610,7 @@
       state.ws = ws;
 
       ws.onopen = () => {
+        reconnectAttempts = 0;
         setStatus(false, 'WAITING FOR PHONE...');
       };
 
@@ -1637,8 +1646,8 @@
         }
       };
 
-      ws.onclose = () => {
-        handlePeerDisconnected();
+      ws.onclose = (event) => {
+        handlePeerDisconnected(event);
       };
     }
 
@@ -2026,18 +2035,57 @@
         return;
       }
 
-      const offset = chunkIndex * 512 * 1024;
-      const slice = transfer.file.slice(offset, offset + 512 * 1024);
-      const arrayBuffer = await slice.arrayBuffer();
+      let arrayBuffer, encrypted;
+      try {
+        const offset = chunkIndex * 512 * 1024;
+        const slice = transfer.file.slice(offset, offset + 512 * 1024);
+        arrayBuffer = await slice.arrayBuffer();
+        encrypted = await encryptChunk(arrayBuffer, state.cryptoKey, chunkIndex);
+      } catch (err) {
+        console.error("Failed to read or encrypt chunk:", err);
+        state.currentTransfer = null;
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'cancelled' }));
+        }
+        if (state.sendQueue.length > 0) {
+          processNextInQueue();
+        } else {
+          setPhase('paired');
+          updateQueueDisplay();
+          setStatus(true, `CONNECTED: ${state.connectedDevice ? state.connectedDevice.toUpperCase() : ''} (ERROR READING FILE)`);
+        }
+        return;
+      }
 
-      const encrypted = await encryptChunk(arrayBuffer, state.cryptoKey, chunkIndex);
       transfer.pendingAck = chunkIndex;
       if (state.ws && state.ws.readyState === WebSocket.OPEN) {
         state.ws.send(encrypted);
       }
+      
+      if (state.senderStallTimer) clearTimeout(state.senderStallTimer);
+      state.senderStallTimer = setTimeout(() => {
+        if (state.currentTransfer && state.currentTransfer.direction === 'sending') {
+          console.warn(`Sender stalled waiting for ACK on chunk ${chunkIndex}`);
+          state.currentTransfer = null;
+          if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+            state.ws.send(JSON.stringify({ type: 'cancelled' }));
+          }
+          if (state.sendQueue.length > 0) {
+            processNextInQueue();
+          } else {
+            setPhase('paired');
+            updateQueueDisplay();
+            setStatus(true, `CONNECTED: ${state.connectedDevice ? state.connectedDevice.toUpperCase() : ''} (STALLED)`);
+          }
+        }
+      }, 15000);
     }
 
     function handleAck(chunkIndex) {
+      if (state.senderStallTimer) {
+        clearTimeout(state.senderStallTimer);
+        state.senderStallTimer = null;
+      }
       const transfer = state.currentTransfer;
       if (!transfer || transfer.direction !== 'sending') return;
       
@@ -2808,17 +2856,54 @@
         return;
       }
 
-      const offset = chunkIndex * 512 * 1024;
-      const slice = transfer.file.slice(offset, offset + 512 * 1024);
-      const arrayBuffer = await slice.arrayBuffer();
+      let arrayBuffer, encrypted;
+      try {
+        const offset = chunkIndex * 512 * 1024;
+        const slice = transfer.file.slice(offset, offset + 512 * 1024);
+        arrayBuffer = await slice.arrayBuffer();
+        encrypted = await encryptChunk(arrayBuffer, phoneState.cryptoKey, chunkIndex);
+      } catch (err) {
+        console.error("Failed to read or encrypt chunk:", err);
+        phoneState.currentTransfer = null;
+        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+          phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+        }
+        if (phoneState.sendQueue.length > 0) {
+          phoneProcessNextInQueue();
+        } else {
+          phoneShowScreen('connected');
+          document.getElementById('phone-status-text').innerText = 'ERROR READING FILE';
+        }
+        return;
+      }
 
-      const encrypted = await encryptChunk(arrayBuffer, phoneState.cryptoKey, chunkIndex);
       if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
         phoneState.ws.send(encrypted);
       }
+
+      if (phoneState.senderStallTimer) clearTimeout(phoneState.senderStallTimer);
+      phoneState.senderStallTimer = setTimeout(() => {
+        if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {
+          console.warn(`Phone sender stalled waiting for ACK on chunk ${chunkIndex}`);
+          phoneState.currentTransfer = null;
+          if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+            phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+          }
+          if (phoneState.sendQueue.length > 0) {
+            phoneProcessNextInQueue();
+          } else {
+            phoneShowScreen('connected');
+            document.getElementById('phone-status-text').innerText = 'STALLED - RETRY';
+          }
+        }
+      }, 15000);
     }
 
     function phoneHandleAck(chunkIndex) {
+      if (phoneState.senderStallTimer) {
+        clearTimeout(phoneState.senderStallTimer);
+        phoneState.senderStallTimer = null;
+      }
       const transfer = phoneState.currentTransfer;
       if (!transfer || transfer.direction !== 'sending') return;
 

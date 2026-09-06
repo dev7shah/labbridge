@@ -32,53 +32,25 @@ const CORS_HEADERS: Record<string, string> = {
 };
 
 const ipRequests = new Map<string, { count: number; resetAt: number }>();
-const nearbySessions = new Map<string, Array<{ sessionId: string; updatedAt: number }>>();
-
-function registerNearbySession(ip: string, sessionId: string) {
-  if (!sessionId || sessionId === "null" || sessionId === "undefined") return;
-  const now = Date.now();
-  let list = nearbySessions.get(ip) || [];
-  list = list.filter(item => now - item.updatedAt < 240 * 1000 && item.sessionId !== sessionId);
-  list.unshift({ sessionId, updatedAt: now });
-  nearbySessions.set(ip, list);
-}
-
-function unregisterNearbySession(ip: string, sessionId: string) {
-  if (!sessionId) return;
-  let list = nearbySessions.get(ip) || [];
-  list = list.filter(item => item.sessionId !== sessionId);
-  nearbySessions.set(ip, list);
-}
-
-function getNearbySessions(ip: string, excludeSessionIds: string[] = []): Array<{ session_id: string; age_seconds: number }> {
-  const now = Date.now();
-  let list = nearbySessions.get(ip) || [];
-  list = list.filter(item => now - item.updatedAt < 240 * 1000);
-  nearbySessions.set(ip, list);
-
-  const excludeSet = new Set(excludeSessionIds.filter(Boolean));
-
-  return list
-    .filter(item => !excludeSet.has(item.sessionId))
-    .map(item => ({
-      session_id: item.sessionId,
-      age_seconds: Math.floor((now - item.updatedAt) / 1000),
-    }));
-}
+let lastGcTime = 0;
 
 function checkRateLimit(ip: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
 
-  // Periodic eviction of expired entries
-  if (ipRequests.size > 1000) {
+  // Periodic eviction of expired entries (throttled to max once per 10s)
+  if (ipRequests.size > 1000 && now - lastGcTime > 10000) {
+    lastGcTime = now;
     for (const [key, val] of ipRequests.entries()) {
       if (now > val.resetAt) ipRequests.delete(key);
     }
   }
-  // Hard cap safeguard
+  // Hard cap safeguard - delete oldest elements efficiently
   if (ipRequests.size > 10000) {
-    const keys = Array.from(ipRequests.keys()).slice(0, 2000);
-    for (const k of keys) ipRequests.delete(k);
+    let dropped = 0;
+    for (const key of ipRequests.keys()) {
+      ipRequests.delete(key);
+      if (++dropped >= 2000) break;
+    }
   }
 
   const record = ipRequests.get(ip);

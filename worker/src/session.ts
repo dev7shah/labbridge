@@ -246,6 +246,7 @@ export class Session extends DurableObject {
         }
       }
       const folders = (await this.ctx.storage.get<unknown[]>("folders")) ?? [];
+      await this.ctx.storage.put("shortcut_mode", true);
       return Response.json({ status: "ok", folders });
     }
 
@@ -294,6 +295,10 @@ export class Session extends DurableObject {
     server.serializeAttachment({ role } satisfies SocketAttachment);
     this.ctx.acceptWebSocket(server);
 
+    if (role === "phone" || role === "peer") {
+      await this.ctx.storage.put("shortcut_mode", false);
+    }
+
     // Send initial messages based on role
     if (role === "pc") {
       // Check if phone or peer is already connected
@@ -328,15 +333,15 @@ export class Session extends DurableObject {
     }
 
     if (role === "peer") {
-      // Peer is a second PC — notify host PC and auto-pair both PCs instantly
+      // Peer is a second PC — notify host PC to show connection request modal
       for (const ws of existing) {
         const att = ws.deserializeAttachment() as SocketAttachment | null;
         if (att?.role === "pc") {
-          ws.send(JSON.stringify({ type: "paired", device: "PC (Peer)" }));
+          ws.send(JSON.stringify({ type: "connection_request", device: "PC (Peer)" }));
         }
       }
-      // Tell the peer it is paired with the host PC
-      server.send(JSON.stringify({ type: "paired", device: "PC (Host)" }));
+      // Note: We do not send "paired" to the peer here.
+      // The peer will remain waiting until the host PC accepts and sends "connection_accept".
     }
 
     // If both sides are now paired, reset/extend the session alarm to 240 seconds (4 minutes)
@@ -460,16 +465,9 @@ export class Session extends DurableObject {
             return;
           }
 
-          // Check if PC is sending to an iOS Shortcut (no WebSocket phone connected)
-          const freshSockets = this.ctx.getWebSockets();
-          const phoneSocket = freshSockets.find(s => {
-            const att = s.deserializeAttachment() as SocketAttachment | null;
-            return att?.role === "phone" && s !== ws;
-          });
+          const isShortcutMode = (await this.ctx.storage.get("shortcut_mode")) === true;
 
-          const shortcutMode = isFromPc && !phoneSocket;
-
-          if (shortcutMode) {
+          if (isShortcutMode && isFromPc) {
             // Buffer mode is capped at 100MB to fit within Durable Object storage limits
             if ((record.size as number) > 100 * 1024 * 1024) {
               ws.send(JSON.stringify({ type: "error", message: "Shortcut buffer mode max file size is 100MB" }));

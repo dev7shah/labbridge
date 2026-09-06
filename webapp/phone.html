@@ -1125,7 +1125,6 @@
       const fileId = state.photoKeys[currentPhoneGalleryIndex];
       if (fileId) {
         deletePhoneFileById(fileId, null);
-        renderPhoneThumbnails();
         if (state.photoKeys.length > 0) {
           if (currentPhoneGalleryIndex >= state.photoKeys.length) currentPhoneGalleryIndex = Math.max(0, state.photoKeys.length - 1);
           openPhoneGalleryById(state.photoKeys[currentPhoneGalleryIndex]);
@@ -1249,7 +1248,7 @@
       const file = state.phoneSendQueue.shift();
       
       const CHUNK_SIZE = 512 * 1024;
-      const total_chunks = Math.ceil(file.size / CHUNK_SIZE);
+      const total_chunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
 
       state.sending = {
         file,
@@ -1286,7 +1285,7 @@
         // All chunks sent — wait for remaining acks, don't send more
         return;
       }
-      if (state.ws.readyState !== WebSocket.OPEN) {
+      if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
         console.warn('WS not open, pausing send');
         return;
       }
@@ -1300,7 +1299,7 @@
       slice.arrayBuffer().then(ab => {
         return encryptChunk(ab, state.cryptoKey, chunkIndex);
       }).then(encrypted => {
-        if (!state.sending || state.ws.readyState !== WebSocket.OPEN) return;
+        if (!state.sending || !state.ws || state.ws.readyState !== WebSocket.OPEN) return;
         state.ws.send(encrypted);
       }).catch(err => {
         console.error('Chunk encrypt/send error:', err);
