@@ -656,7 +656,7 @@
       } else if (savedUrl && !savedUrl.includes('YOUR_SUBDOMAIN')) {
         state.workerHttpUrl = savedUrl;
       } else {
-        const isFileOrLocal = window.location.protocol === 'file:' || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1');
+        const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
         state.workerHttpUrl = isFileOrLocal ? 'https://cueflex.shahdev0710.workers.dev' : window.location.origin;
       }
 
@@ -1378,8 +1378,8 @@
           state.scanner = new Html5Qrcode('qr-reader');
         }
         state.scanner.start(
-          { facingMode: "environment", audio: false },
-          { fps: 10, qrbox: { width: 220, height: 220 }, videoConstraints: { facingMode: "environment", audio: false } },
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
           (decodedText) => {
             if (state.scanner) {
               try { state.scanner.stop(); } catch(e){}

@@ -1123,7 +1123,7 @@
   </div>
 
   <script>
-    const isFileOrLocal = window.location.protocol === 'file:';
+    const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
     const WORKER_URL = window.CUEFLEX_WORKER_URL || (isFileOrLocal ? 'wss://cueflex.shahdev0710.workers.dev' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
     const HTTP_URL = WORKER_URL.replace('ws://', 'http://').replace('wss://', 'https://');
 
