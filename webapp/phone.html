@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>CueFlex — Phone V24</title>
+  <title>CueFlex — Phone PWA</title>
   <meta property="og:title" content="CueFlex">
   <meta property="og:description" content="Zero-cloud P2P encrypted file transfer for your local network and beyond.">
   <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/cueflex/main/preview.jpg">
@@ -604,8 +604,6 @@
     </div>
   </div>
 
-  <div id="debug-info" style="margin: 16px; padding: 10px; background: #111; border: 1px solid #333; font-family: monospace; font-size: 10px; color: #888; word-break: break-all;">V24 loading...</div>
-
   <footer>
     <a href="https://github.com/dev7shah" target="_blank" class="made-by-badge">MADE BY DEV7SHAH</a>
   </footer>
@@ -695,9 +693,7 @@
           connectToSession(s);
         }
 
-        // Write debug info
-        const dbg = document.getElementById('debug-info');
-        if (dbg) dbg.innerHTML = 'V24 OK | URL: ' + window.location.href + ' | s=' + (s||'none') + ' | worker=' + (state.workerHttpUrl||'none');
+
       } catch (err) {
         // Show error visibly on the page
         const banner = document.getElementById('url-warning-banner');
@@ -706,8 +702,7 @@
           banner.style.color = '#EF4444';
           banner.innerHTML = '[ ERROR ] Init failed: ' + (err.message || err) + '<br>URL: ' + window.location.href;
         }
-        const dbg = document.getElementById('debug-info');
-        if (dbg) dbg.innerHTML = 'V24 ERROR: ' + (err.message || err) + ' | URL: ' + window.location.href;
+
         console.error('[CueFlex] initApp error:', err);
       }
     }
