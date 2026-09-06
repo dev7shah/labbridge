@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="CueFlex" />
-  <script src="html5-qrcode.min.js"></script>
+  <script src="/html5-qrcode.min.js"></script>
   <style>
     :root {
       --bg:           #000000;
@@ -737,84 +737,108 @@
     }
 
     async function connectToSession(sessionId) {
-      state.sessionId = sessionId;
-      const urlInput = document.getElementById('worker-url-input');
-      if (urlInput && urlInput.value.trim()) {
-        state.workerHttpUrl = urlInput.value.trim();
-        localStorage.setItem('cueflex_worker_url', state.workerHttpUrl);
-      }
-
-      if (state.scanner) {
-        try { await state.scanner.stop(); } catch(e){}
-        document.getElementById('qr-reader').style.display = 'none';
-      }
-
-      setStatus(false, 'CONNECTING...');
-      state.cryptoKey = await deriveAESKey(sessionId);
-
-      const wsUrl = state.workerHttpUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
-      const socketUrl = `${wsUrl}/session/${sessionId}/phone`;
-
-      const ws = new WebSocket(socketUrl);
-      ws.binaryType = 'arraybuffer';
-      let opened = false;
-
-      ws.onopen = () => {
-        opened = true;
-        state.ws = ws;
-        setStatus(true, 'CONNECTED');
-        document.getElementById('section-connect').style.display = 'none';
-        document.getElementById('section-dashboard').style.display = 'block';
-        document.getElementById('session-info-text').innerText = `SESSION ID: ${sessionId} — E2E ENCRYPTED`;
-      };
-
-      let isProcessingBinary = false;
-      const binaryQueue = [];
-      
-      async function processBinaryQueue() {
-        if (isProcessingBinary) return;
-        isProcessingBinary = true;
-        while (binaryQueue.length > 0) {
-          let buffer = binaryQueue.shift();
-          if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
-          await handleBinaryMessage(buffer);
+      try {
+        state.sessionId = sessionId;
+        const urlInput = document.getElementById('worker-url-input');
+        if (urlInput && urlInput.value.trim()) {
+          state.workerHttpUrl = urlInput.value.trim();
+          localStorage.setItem('cueflex_worker_url', state.workerHttpUrl);
         }
-        isProcessingBinary = false;
-      }
 
-      ws.onmessage = (event) => {
-        if (typeof event.data === 'string') {
-          const msg = JSON.parse(event.data);
-          handleTextMessage(msg);
-        } else {
-          binaryQueue.push(event.data);
-          processBinaryQueue();
+        if (state.scanner) {
+          try { await state.scanner.stop(); } catch(e){}
+          document.getElementById('qr-reader').style.display = 'none';
         }
-      };
 
-      ws.onclose = () => {
-        if (opened && state.sessionId) {
-          setStatus(false, 'RECONNECTING...');
-          setTimeout(() => {
-            if (state.sessionId && (!state.ws || state.ws.readyState !== WebSocket.OPEN)) {
-              connectToSession(state.sessionId);
-            }
-          }, 1500);
+        setStatus(false, 'CONNECTING...');
+
+        // Check crypto.subtle availability (requires HTTPS)
+        if (!window.crypto || !window.crypto.subtle) {
+          setStatus(false, 'HTTPS REQUIRED');
+          alert('Secure context (HTTPS) is required for encryption. Current URL: ' + window.location.href);
           return;
         }
-        disconnectPhoneSession();
-        if (!opened) {
-          const banner = document.getElementById('url-warning-banner');
-          if (banner) {
-            banner.style.display = 'block';
-            banner.innerHTML = '[ ! ] UPDATE SERVER WORKER URL IN SETTINGS';
-          }
-        }
-      };
 
-      ws.onerror = () => {
-        setStatus(false, 'CONNECTION ERROR');
-      };
+        try {
+          state.cryptoKey = await deriveAESKey(sessionId);
+        } catch (cryptoErr) {
+          setStatus(false, 'CRYPTO ERROR');
+          alert('Failed to derive encryption key: ' + (cryptoErr.message || cryptoErr));
+          return;
+        }
+
+        const wsUrl = state.workerHttpUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
+        const socketUrl = `${wsUrl}/session/${sessionId}/phone`;
+        console.log('[CueFlex] Connecting to:', socketUrl);
+
+        const ws = new WebSocket(socketUrl);
+        ws.binaryType = 'arraybuffer';
+        let opened = false;
+
+        ws.onopen = () => {
+          opened = true;
+          state.ws = ws;
+          setStatus(true, 'CONNECTED');
+          document.getElementById('section-connect').style.display = 'none';
+          document.getElementById('section-dashboard').style.display = 'block';
+          document.getElementById('session-info-text').innerText = `SESSION ID: ${sessionId} — E2E ENCRYPTED`;
+        };
+
+        let isProcessingBinary = false;
+        const binaryQueue = [];
+        
+        async function processBinaryQueue() {
+          if (isProcessingBinary) return;
+          isProcessingBinary = true;
+          while (binaryQueue.length > 0) {
+            let buffer = binaryQueue.shift();
+            if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+            await handleBinaryMessage(buffer);
+          }
+          isProcessingBinary = false;
+        }
+
+        ws.onmessage = (event) => {
+          if (typeof event.data === 'string') {
+            const msg = JSON.parse(event.data);
+            handleTextMessage(msg);
+          } else {
+            binaryQueue.push(event.data);
+            processBinaryQueue();
+          }
+        };
+
+        ws.onclose = (ev) => {
+          console.log('[CueFlex] WS closed, code:', ev.code, 'reason:', ev.reason, 'opened:', opened);
+          if (opened && state.sessionId) {
+            setStatus(false, 'RECONNECTING...');
+            setTimeout(() => {
+              if (state.sessionId && (!state.ws || state.ws.readyState !== WebSocket.OPEN)) {
+                connectToSession(state.sessionId);
+              }
+            }, 1500);
+            return;
+          }
+          disconnectPhoneSession();
+          if (!opened) {
+            setStatus(false, 'FAILED TO CONNECT');
+            const banner = document.getElementById('url-warning-banner');
+            if (banner) {
+              banner.style.display = 'block';
+              banner.innerHTML = '[ ! ] COULD NOT REACH SERVER — CHECK URL IN SETTINGS';
+            }
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.error('[CueFlex] WS error:', err);
+          setStatus(false, 'CONNECTION ERROR');
+        };
+      } catch (e) {
+        console.error('[CueFlex] connectToSession error:', e);
+        setStatus(false, 'ERROR: ' + (e.message || 'Unknown'));
+        alert('Connection failed: ' + (e.message || e));
+      }
     }
 
     function setStatus(active, text) {
@@ -1367,17 +1391,36 @@
       state.sending = null;
     }
 
-    function toggleScanner() {
+    async function toggleScanner() {
       const box = document.getElementById('qr-reader');
       if (box.style.display === 'block') {
-        if (state.scanner) state.scanner.stop();
-        box.style.display = 'none';
-      } else {
-        box.style.display = 'block';
-        if (!state.scanner) {
-          state.scanner = new Html5Qrcode('qr-reader');
+        if (state.scanner) {
+          try { await state.scanner.stop(); } catch(e){}
         }
-        state.scanner.start(
+        box.style.display = 'none';
+        return;
+      }
+
+      // Check if camera API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera access is not available in this browser/context. Try opening CueFlex in Safari instead of the PWA, or manually enter the session ID.');
+        return;
+      }
+
+      box.style.display = 'block';
+
+      // Stop any existing scanner before creating a new one
+      if (state.scanner) {
+        try { await state.scanner.stop(); } catch(e){}
+        state.scanner = null;
+      }
+
+      try {
+        // Clear the container to avoid stale DOM issues
+        box.innerHTML = '';
+        state.scanner = new Html5Qrcode('qr-reader');
+
+        await state.scanner.start(
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 220, height: 220 } },
           (decodedText) => {
@@ -1407,9 +1450,12 @@
             }
           },
           (errorMessage) => {}
-        ).catch((err) => {
-          alert('Camera access required to scan QR code');
-        });
+        );
+      } catch (err) {
+        console.error('[CueFlex] Scanner error:', err);
+        box.style.display = 'none';
+        state.scanner = null;
+        alert('Camera error: ' + (err.message || err) + '\n\nTip: If using PWA, try opening in Safari. Or enter the session ID manually.');
       }
     }
 
