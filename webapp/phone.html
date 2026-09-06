@@ -636,48 +636,81 @@
 
     let currentPhoneGalleryIndex = 0;
 
-    window.addEventListener('DOMContentLoaded', () => {
-      if (/android/i.test(navigator.userAgent)) {
-        const btn = document.getElementById('android-apk-btn');
-        if (btn) btn.style.display = 'block';
-      }
+    function initApp() {
+      try {
+        if (/android/i.test(navigator.userAgent)) {
+          const btn = document.getElementById('android-apk-btn');
+          if (btn) btn.style.display = 'block';
+        }
 
-      const params = new URLSearchParams(window.location.search);
-      let s = params.get('s');
-      const pathMatch = window.location.pathname.match(/\/session\/([a-zA-Z0-9]{12})\/phone/);
-      if (!s && pathMatch) {
-        s = pathMatch[1];
-      }
-      const w = params.get('w');
-      
-      const savedUrl = localStorage.getItem('cueflex_worker_url');
-      if (w) {
-        state.workerHttpUrl = w;
-      } else if (savedUrl && !savedUrl.includes('YOUR_SUBDOMAIN')) {
-        state.workerHttpUrl = savedUrl;
-      } else {
-        const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
-        state.workerHttpUrl = isFileOrLocal ? 'https://cueflex.shahdev0710.workers.dev' : window.location.origin;
-      }
+        const params = new URLSearchParams(window.location.search);
+        let s = params.get('s');
+        const pathMatch = window.location.pathname.match(/\/session\/([a-zA-Z0-9]{12})\/phone/);
+        if (!s && pathMatch) {
+          s = pathMatch[1];
+        }
+        // Also try hash fragment as fallback
+        if (!s && window.location.hash) {
+          try {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            s = hashParams.get('s');
+          } catch(e){}
+        }
+        const w = params.get('w');
+        
+        let savedUrl = null;
+        try { savedUrl = localStorage.getItem('cueflex_worker_url'); } catch(e){}
+        
+        if (w) {
+          state.workerHttpUrl = w;
+        } else if (savedUrl && !savedUrl.includes('YOUR_SUBDOMAIN')) {
+          state.workerHttpUrl = savedUrl;
+        } else {
+          const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
+          state.workerHttpUrl = isFileOrLocal ? 'https://cueflex.shahdev0710.workers.dev' : window.location.origin;
+        }
 
-      const urlInput = document.getElementById('worker-url-input');
-      if (urlInput) urlInput.value = state.workerHttpUrl;
+        // Fallback: if workerHttpUrl is still empty, hardcode it
+        if (!state.workerHttpUrl) {
+          state.workerHttpUrl = 'https://cueflex.shahdev0710.workers.dev';
+        }
 
-      const warningBanner = document.getElementById('url-warning-banner');
-      const isLocalhostUrl = state.workerHttpUrl.includes('localhost') || state.workerHttpUrl.includes('127.0.0.1');
-      const isPlaceholder = state.workerHttpUrl.includes('YOUR_SUBDOMAIN');
-      const isPhoneBrowser = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+        const urlInput = document.getElementById('worker-url-input');
+        if (urlInput) urlInput.value = state.workerHttpUrl;
 
-      if ((isLocalhostUrl || isPlaceholder) && isPhoneBrowser && warningBanner) {
-        warningBanner.style.display = 'block';
-        warningBanner.innerHTML = '[ ! ] UPDATE SERVER WORKER URL IN SETTINGS';
+        const warningBanner = document.getElementById('url-warning-banner');
+        const isLocalhostUrl = state.workerHttpUrl.includes('localhost') || state.workerHttpUrl.includes('127.0.0.1');
+        const isPlaceholder = state.workerHttpUrl.includes('YOUR_SUBDOMAIN');
+        const isPhoneBrowser = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+
+        if ((isLocalhostUrl || isPlaceholder) && isPhoneBrowser && warningBanner) {
+          warningBanner.style.display = 'block';
+          warningBanner.innerHTML = '[ ! ] UPDATE SERVER WORKER URL IN SETTINGS';
+        }
+
+        if (s && s.length === 12) {
+          document.getElementById('session-input').value = s;
+          connectToSession(s);
+        }
+      } catch (err) {
+        // Show error visibly on the page
+        const banner = document.getElementById('url-warning-banner');
+        if (banner) {
+          banner.style.display = 'block';
+          banner.style.color = '#EF4444';
+          banner.innerHTML = '[ ERROR ] Init failed: ' + (err.message || err) + '<br>URL: ' + window.location.href;
+        }
+        console.error('[CueFlex] initApp error:', err);
       }
+    }
 
-      if (s && s.length === 12) {
-        document.getElementById('session-input').value = s;
-        connectToSession(s);
-      }
-    });
+    // Use multiple methods to ensure init runs
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      // DOM already loaded (e.g. script at end of body)
+      initApp();
+    }
 
     async function deriveAESKey(sessionId) {
       const enc = new TextEncoder();
