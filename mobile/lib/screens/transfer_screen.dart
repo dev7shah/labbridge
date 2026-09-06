@@ -122,7 +122,7 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   Future<void> _launchGithub() async {
-    final uri = Uri.parse('https://github.com/DS0710-coder');
+    final uri = Uri.parse('https://github.com/dev7shah');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -545,7 +545,7 @@ class _TransferScreenState extends State<TransferScreen> {
 
             const SizedBox(height: 32),
 
-            // Made By DS0710-CODER Badge
+            // Made By DEV7SHAH Badge
             Center(
               child: InkWell(
                 onTap: _launchGithub,
@@ -561,7 +561,7 @@ class _TransferScreenState extends State<TransferScreen> {
                       Icon(Icons.code, color: Colors.white, size: 14),
                       SizedBox(width: 8),
                       Text(
-                        'MADE BY DS0710-CODER',
+                        'MADE BY DEV7SHAH',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 11,

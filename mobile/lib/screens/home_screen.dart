@@ -451,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Center(
                       child: InkWell(
                         onTap: () async {
-                          final uri = Uri.parse('https://github.com/DS0710-coder');
+                          final uri = Uri.parse('https://github.com/dev7shah');
                           if (await canLaunchUrl(uri)) {
                             await launchUrl(uri, mode: LaunchMode.externalApplication);
                           }
@@ -468,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icon(Icons.code, color: Colors.white, size: 14),
                               SizedBox(width: 8),
                               Text(
-                                'MADE BY DS0710-CODER',
+                                'MADE BY DEV7SHAH',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,

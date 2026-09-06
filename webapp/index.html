@@ -6,7 +6,7 @@
   <title>CueFlex — Terminal & PWA</title>
   <meta property="og:title" content="CueFlex">
   <meta property="og:description" content="Zero-cloud P2P encrypted file transfer for your local network and beyond.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/DS0710-coder/cueflex/main/preview.jpg">
+  <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/cueflex/main/preview.jpg">
   <meta property="og:url" content="https://cueflex.shahdev0710.workers.dev/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/icon.png" />
@@ -827,7 +827,7 @@
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-        <a href="https://github.com/DS0710-coder" target="_blank" class="made-by-badge">MADE BY DS0710-CODER</a>
+        <a href="https://github.com/dev7shah" target="_blank" class="made-by-badge">MADE BY DEV7SHAH</a>
         <div class="status-pill">
           <div id="status-dot" class="status-dot"></div>
           <span id="status-text">DISCONNECTED</span>
@@ -2162,7 +2162,7 @@
         }
       }, 15000);
 
-      if (receivedCount >= transfer.total_chunks) {
+      if (transfer.receivedChunks >= transfer.total_chunks) {
         const t = state.currentTransfer;
         if (!t || t.direction !== 'receiving') return;
 
