@@ -357,10 +357,10 @@ class DbService {
       try {
         if (!Platform.environment.containsKey('FLUTTER_TEST')) {
           final docsDir = await getApplicationDocumentsDirectory();
-          final cueFlexDir = Directory(p.join(docsDir.path, 'DocTransit'));
-          if (await cueFlexDir.exists()) {
-            await cueFlexDir.delete(recursive: true);
-            await cueFlexDir.create();
+          final docTransitDir = Directory(p.join(docsDir.path, 'DocTransit'));
+          if (await docTransitDir.exists()) {
+            await docTransitDir.delete(recursive: true);
+            await docTransitDir.create();
           }
         }
       } catch (_) {}

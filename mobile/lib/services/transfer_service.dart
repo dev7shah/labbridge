@@ -357,14 +357,14 @@ class TransferService extends ChangeNotifier {
     try {
       // Move to app documents directory
       final docsDir = await getApplicationDocumentsDirectory();
-      final cueFlexDir = Directory(p.join(docsDir.path, 'DocTransit'));
-      if (!await cueFlexDir.exists()) {
-        await cueFlexDir.create(recursive: true);
+      final docTransitDir = Directory(p.join(docsDir.path, 'DocTransit'));
+      if (!await docTransitDir.exists()) {
+        await docTransitDir.create(recursive: true);
       }
 
       final safeFileName = p.basename(fileName.replaceAll(RegExp(r'[\\/]+'), '_'));
-      final targetPath = p.join(cueFlexDir.path, safeFileName);
-      if (!p.isWithin(cueFlexDir.path, targetPath)) {
+      final targetPath = p.join(docTransitDir.path, safeFileName);
+      if (!p.isWithin(docTransitDir.path, targetPath)) {
         throw Exception('Invalid file target path');
       }
       final targetFile = await file.copy(targetPath);
