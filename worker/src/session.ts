@@ -27,7 +27,7 @@ async function deriveAndDecrypt(sessionId: string, encryptedBuffer: ArrayBuffer)
     {
       name: "HKDF",
       hash: "SHA-256",
-      salt: enc.encode("cueflex-v2"),
+      salt: enc.encode("doctransit-v2"),
       info: enc.encode("file-transfer")
     },
     baseKey,
@@ -53,7 +53,7 @@ const MAX_SESSION_LIFETIME_MS = 60 * 60 * 1000; // 1 hour hard maximum limit
 const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024; // 500MB max limit per transfer
 
 /**
- * A single CueFlex relay session.
+ * A single DocTransit relay session.
  *
  * Uses the WebSocket Hibernation API so the DO can sleep between
  * messages and only wake when data arrives or the alarm fires.

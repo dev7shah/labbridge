@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>CueFlex — Phone PWA</title>
-  <meta property="og:title" content="CueFlex">
+  <title>DocTransit — Phone PWA</title>
+  <meta property="og:title" content="DocTransit">
   <meta property="og:description" content="Zero-cloud P2P encrypted file transfer for your local network and beyond.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/cueflex/main/preview.jpg">
-  <meta property="og:url" content="https://cueflex.shahdev0710.workers.dev/">
+  <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg">
+  <meta property="og:url" content="https://doctransit.shahdev0710.workers.dev/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="/icon.png" />
@@ -15,7 +15,7 @@
   <meta name="theme-color" content="#000000" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="CueFlex" />
+  <meta name="apple-mobile-web-app-title" content="DocTransit" />
   <script src="/html5-qrcode.min.js"></script>
   <style>
     :root {
@@ -455,9 +455,9 @@
 <body>
   <header>
     <div class="brand">
-      <img src="logo.png" alt="CueFlex Logo" />
+      <img src="logo.png" alt="DocTransit Logo" />
       <div>
-        <div class="brand-name">CUEFLEX</div>
+        <div class="brand-name">DOCTRANSIT</div>
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
@@ -469,7 +469,7 @@
   </header>
 
   <!-- Permanent Android APK Button -->
-  <a id="android-apk-btn" href="cueflex-app.apk" download="cueflex-app.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
+  <a id="android-apk-btn" href="doctransit-app.apk" download="doctransit-app.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
     [ DOWNLOAD NATIVE ANDROID APK ]
   </a>
 
@@ -477,11 +477,11 @@
   <div id="section-connect" class="card">
     <div style="background: var(--surface-2); border: 1px solid var(--border); padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-        <span style="font-size: 11px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;">[ WHAT IS CUEFLEX? ]</span>
+        <span style="font-size: 11px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;">[ WHAT IS DOCTRANSIT? ]</span>
         <a href="install.html" style="background: #FFFFFF; color: #000000; padding: 4px 10px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;">[ GET APK ]</a>
       </div>
       <p style="font-size: 12px; color: var(--text-2); line-height: 1.4; font-family: var(--mono);">
-        CueFlex streams files peer-to-peer between your mobile device and PC terminal with 256-bit E2E encryption. Zero cloud storage or login required.
+        DocTransit streams files peer-to-peer between your mobile device and PC terminal with 256-bit E2E encryption. Zero cloud storage or login required.
       </p>
     </div>
 
@@ -659,7 +659,7 @@
         const w = params.get('w');
         
         let savedUrl = null;
-        try { savedUrl = localStorage.getItem('cueflex_worker_url'); } catch(e){}
+        try { savedUrl = localStorage.getItem('doctransit_worker_url'); } catch(e){}
         
         if (w) {
           state.workerHttpUrl = w;
@@ -667,12 +667,12 @@
           state.workerHttpUrl = savedUrl;
         } else {
           const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
-          state.workerHttpUrl = isFileOrLocal ? 'https://cueflex.shahdev0710.workers.dev' : window.location.origin;
+          state.workerHttpUrl = isFileOrLocal ? 'https://doctransit.shahdev0710.workers.dev' : window.location.origin;
         }
 
         // Fallback: if workerHttpUrl is still empty, hardcode it
         if (!state.workerHttpUrl) {
-          state.workerHttpUrl = 'https://cueflex.shahdev0710.workers.dev';
+          state.workerHttpUrl = 'https://doctransit.shahdev0710.workers.dev';
         }
 
         const urlInput = document.getElementById('worker-url-input');
@@ -703,7 +703,7 @@
           banner.innerHTML = '[ ERROR ] Init failed: ' + (err.message || err) + '<br>URL: ' + window.location.href;
         }
 
-        console.error('[CueFlex] initApp error:', err);
+        console.error('[DocTransit] initApp error:', err);
       }
     }
 
@@ -724,7 +724,7 @@
         {
           name: 'HKDF',
           hash: 'SHA-256',
-          salt: enc.encode('cueflex-v2'),
+          salt: enc.encode('doctransit-v2'),
           info: enc.encode('file-transfer')
         },
         baseKey,
@@ -778,7 +778,7 @@
         const urlInput = document.getElementById('worker-url-input');
         if (urlInput && urlInput.value.trim()) {
           state.workerHttpUrl = urlInput.value.trim();
-          localStorage.setItem('cueflex_worker_url', state.workerHttpUrl);
+          localStorage.setItem('doctransit_worker_url', state.workerHttpUrl);
         }
 
         if (state.scanner) {
@@ -805,7 +805,7 @@
 
         const wsUrl = state.workerHttpUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
         const socketUrl = `${wsUrl}/session/${sessionId}/phone`;
-        console.log('[CueFlex] Connecting to:', socketUrl);
+        console.log('[DocTransit] Connecting to:', socketUrl);
 
         const ws = new WebSocket(socketUrl);
         ws.binaryType = 'arraybuffer';
@@ -845,7 +845,7 @@
         };
 
         ws.onclose = (ev) => {
-          console.log('[CueFlex] WS closed, code:', ev.code, 'reason:', ev.reason, 'opened:', opened);
+          console.log('[DocTransit] WS closed, code:', ev.code, 'reason:', ev.reason, 'opened:', opened);
           if (opened && state.sessionId) {
             setStatus(false, 'RECONNECTING...');
             setTimeout(() => {
@@ -867,11 +867,11 @@
         };
 
         ws.onerror = (err) => {
-          console.error('[CueFlex] WS error:', err);
+          console.error('[DocTransit] WS error:', err);
           setStatus(false, 'CONNECTION ERROR');
         };
       } catch (e) {
-        console.error('[CueFlex] connectToSession error:', e);
+        console.error('[DocTransit] connectToSession error:', e);
         setStatus(false, 'ERROR: ' + (e.message || 'Unknown'));
         alert('Connection failed: ' + (e.message || e));
       }
@@ -1440,7 +1440,7 @@
 
       // Check if camera API is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Camera access is not available in this browser/context. Try opening CueFlex in Safari instead of the PWA, or manually enter the session ID.');
+        alert('Camera access is not available in this browser/context. Try opening DocTransit in Safari instead of the PWA, or manually enter the session ID.');
         return;
       }
 
@@ -1489,7 +1489,7 @@
           (errorMessage) => {}
         );
       } catch (err) {
-        console.error('[CueFlex] Scanner error:', err);
+        console.error('[DocTransit] Scanner error:', err);
         box.style.display = 'none';
         state.scanner = null;
         alert('Camera error: ' + (err.message || err) + '\n\nTip: If using PWA, try opening in Safari. Or enter the session ID manually.');

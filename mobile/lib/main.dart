@@ -93,11 +93,11 @@ class IconBox extends StatelessWidget {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DbService().init();
-  runApp(const CueFlexApp());
+  runApp(const DocTransitApp());
 }
 
-class CueFlexApp extends StatelessWidget {
-  const CueFlexApp({super.key});
+class DocTransitApp extends StatelessWidget {
+  const DocTransitApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +106,7 @@ class CueFlexApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TransferService()),
       ],
       child: MaterialApp(
-        title: 'CueFlex',
+        title: 'DocTransit',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: const ColorScheme.dark(

@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'CUEFLEX SYSTEM',
+                                  'DOCTRANSIT SYSTEM',
                                   style: TextStyle(
                                     color: AppTheme.textPrimary,
                                     fontSize: 18,

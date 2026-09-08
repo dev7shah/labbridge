@@ -297,7 +297,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           const SizedBox(width: 14),
                           const SizedBox(height: 14),
                           const Text(
-                            'CUEFLEX',
+                            'DOCTRANSIT',
                             style: TextStyle(
                               color: AppTheme.textPrimary,
                               fontSize: 18,

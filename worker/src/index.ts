@@ -1,5 +1,5 @@
 /**
- * CueFlex — Cloudflare Worker entry point.
+ * DocTransit — Cloudflare Worker entry point.
  *
  * Pure relay: routes requests to Session Durable Objects,
  * stores nothing, knows nothing about users or files.

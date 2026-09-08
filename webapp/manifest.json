@@ -1,6 +1,6 @@
 {
-  "name": "CueFlex",
-  "short_name": "CueFlex",
+  "name": "DocTransit",
+  "short_name": "DocTransit",
   "start_url": "/phone.html",
   "display": "standalone",
   "background_color": "#000000",

@@ -22,7 +22,7 @@
 
 ## Source Code Snippet
 ```js
-const CACHE_NAME = 'cueflex-pwa-v22';
+const CACHE_NAME = 'doctransit-pwa-v22';
 const ASSETS = [
   '/',
   '/index.html',

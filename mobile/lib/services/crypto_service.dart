@@ -13,7 +13,7 @@ class CryptoService {
   /// Derive a 256-bit key from session ID using HKDF with SHA-256
   Uint8List deriveKey(String sessionId) {
     final ikm = Uint8List.fromList(utf8.encode(sessionId));
-    final salt = Uint8List.fromList(utf8.encode('cueflex-v2'));
+    final salt = Uint8List.fromList(utf8.encode('doctransit-v2'));
     final info = Uint8List.fromList(utf8.encode('file-transfer'));
 
     // HKDF-Extract

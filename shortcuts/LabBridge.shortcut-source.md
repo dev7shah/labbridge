@@ -1,11 +1,11 @@
-# CueFlex iOS Shortcut
+# DocTransit iOS Shortcut
 
-This document provides the exact sequence of actions to build the **CueFlex** shortcut in the iOS Shortcuts app.
+This document provides the exact sequence of actions to build the **DocTransit** shortcut in the iOS Shortcuts app.
 
 ## Actions in order:
 
 1. **Text** — Set variable `WorkerURL`
-   Value: `https://cueflex-worker.YOUR_SUBDOMAIN.workers.dev`
+   Value: `https://doctransit-worker.YOUR_SUBDOMAIN.workers.dev`
    *(User updates this once after adding the shortcut)*
 
 2. **Scan QR Code** — Scan QR from PC screen
@@ -58,7 +58,7 @@ This document provides the exact sequence of actions to build the **CueFlex** sh
        - **Combine Text/Files** `AllChunks` → `FileData`
        - **Set Name** of `FileData` to `Filename`
        - **Save File** `FileData` to Files app
-         - Default location: `iCloud Drive / CueFlex`
+         - Default location: `iCloud Drive / DocTransit`
          - Ask where to save: `YES`
        - **URL**: `[WorkerURL]/session/[SessionID]/phone_ack`
        - **Get Contents of URL** (Method: POST) — confirm receipt with PC

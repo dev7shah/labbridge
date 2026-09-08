@@ -357,7 +357,7 @@ class TransferService extends ChangeNotifier {
     try {
       // Move to app documents directory
       final docsDir = await getApplicationDocumentsDirectory();
-      final cueFlexDir = Directory(p.join(docsDir.path, 'CueFlex'));
+      final cueFlexDir = Directory(p.join(docsDir.path, 'DocTransit'));
       if (!await cueFlexDir.exists()) {
         await cueFlexDir.create(recursive: true);
       }

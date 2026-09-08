@@ -22,5 +22,5 @@
 
 ## Source Code Snippet
 ```ts
-export const MANIFEST_JSON = "{\n  \"name\": \"CueFlex\",\n  \"short_name\": \"CueFlex\",\n  \"start_url\": \"/phone.html\",\n  \"display\": \"standalone\",\n  \"background_color\": \"#000000\",\n  \"theme_color\": \"#000000\",\n  \"icons\": [\n    { \"src\": \"icon-192.png\", \"sizes\": \"192x192\", \"type\": \"image/png\" },\n    { \"src\": \"icon-512.png\", \"sizes\": \"512x512\", \"type\": \"image/png\" }\n  ]\n}\n";
+export const MANIFEST_JSON = "{\n  \"name\": \"DocTransit\",\n  \"short_name\": \"DocTransit\",\n  \"start_url\": \"/phone.html\",\n  \"display\": \"standalone\",\n  \"background_color\": \"#000000\",\n  \"theme_color\": \"#000000\",\n  \"icons\": [\n    { \"src\": \"icon-192.png\", \"sizes\": \"192x192\", \"type\": \"image/png\" },\n    { \"src\": \"icon-512.png\", \"sizes\": \"512x512\", \"type\": \"image/png\" }\n  ]\n}\n";
 ```

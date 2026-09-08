@@ -26,7 +26,7 @@
 ## Source Code Snippet
 ```ts
 /**
- * Relay helper utilities for the CueFlex worker.
+ * Relay helper utilities for the DocTransit worker.
  * Pure functions — no state, no side effects.
  */
 

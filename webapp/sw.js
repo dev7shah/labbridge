@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cueflex-pwa-v23';
+const CACHE_NAME = 'doctransit-pwa-v23';
 const ASSETS = [
   '/',
   '/index.html',

@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>CueFlex — Terminal & PWA</title>
-  <meta property="og:title" content="CueFlex">
+  <title>DocTransit — Terminal & PWA</title>
+  <meta property="og:title" content="DocTransit">
   <meta property="og:description" content="Zero-cloud P2P encrypted file transfer for your local network and beyond.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/cueflex/main/preview.jpg">
-  <meta property="og:url" content="https://cueflex.shahdev0710.workers.dev/">
+  <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg">
+  <meta property="og:url" content="https://doctransit.shahdev0710.workers.dev/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/icon.png" />
   <script src="/fflate.min.js"></script>
@@ -15,7 +15,7 @@
   <meta name="theme-color" content="#000000" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="CueFlex" />
+  <meta name="apple-mobile-web-app-title" content="DocTransit" />
   <script src="qr.min.js"></script>
   <script src="jsQR.min.js"></script>
   <style>
@@ -820,9 +820,9 @@
   <div id="pc-mode-container" class="container">
     <header>
       <div class="brand">
-        <img src="logo.png" alt="CueFlex Logo" />
+        <img src="logo.png" alt="DocTransit Logo" />
         <div>
-          <div class="brand-name">CUEFLEX TERMINAL</div>
+          <div class="brand-name">DOCTRANSIT TERMINAL</div>
           <div class="brand-sub">[ E2E ENCRYPTED · ZERO CLOUD ]</div>
         </div>
       </div>
@@ -843,16 +843,16 @@
         <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 24px; background: var(--surface-2); border: 1px solid var(--border); padding: 28px;">
           <div style="display: flex; flex-direction: column; gap: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-              <span style="font-size: 13px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;">[ WHAT IS CUEFLEX? ]</span>
+              <span style="font-size: 13px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;">[ WHAT IS DOCTRANSIT? ]</span>
               <a href="install.html" style="background: #FFFFFF; color: #000000; padding: 6px 14px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;">[ GET MOBILE APP / APK ]</a>
             </div>
             <p style="font-size: 14px; color: var(--text-2); line-height: 1.6; font-family: var(--mono);">
-              CueFlex is a serverless, zero-install peer-to-peer file transfer utility for rapid data movement between desktop terminals and mobile devices.
+              DocTransit is a serverless, zero-install peer-to-peer file transfer utility for rapid data movement between desktop terminals and mobile devices.
             </p>
             <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: var(--text-2); font-family: var(--mono); border-top: 1px solid var(--border); padding-top: 16px;">
               <div>• <strong style="color: #FFFFFF;">ZERO CLOUD STORAGE:</strong> Files stream directly between devices via WebSocket memory relay without server caching.</div>
               <div>• <strong style="color: #FFFFFF;">E2E ENCRYPTED:</strong> 256-bit AES-GCM encryption derived from the ephemeral session ID ensures zero interception.</div>
-              <div>• <strong style="color: #FFFFFF;">INSTANT PAIRING:</strong> Point your CueFlex app or iPhone camera at the QR code to connect in &lt;1 second.</div>
+              <div>• <strong style="color: #FFFFFF;">INSTANT PAIRING:</strong> Point your DocTransit app or iPhone camera at the QR code to connect in &lt;1 second.</div>
             </div>
           </div>
 
@@ -861,7 +861,7 @@
             <div class="steps" style="margin-bottom: 0; gap: 14px;">
               <div class="step">
                 <span class="step-num">01</span>
-                <span class="step-text" style="font-size: 14px;">Open CueFlex mobile app or iPhone camera</span>
+                <span class="step-text" style="font-size: 14px;">Open DocTransit mobile app or iPhone camera</span>
               </div>
               <div class="step">
                 <span class="step-num">02</span>
@@ -986,9 +986,9 @@
   <div id="phone-mode-container" class="container" style="display: none;">
     <header>
       <div class="brand">
-        <img src="logo.png" alt="CueFlex Logo" />
+        <img src="logo.png" alt="DocTransit Logo" />
         <div>
-          <div class="brand-name">CUEFLEX PHONE</div>
+          <div class="brand-name">DOCTRANSIT PHONE</div>
         </div>
       </div>
       <div class="status-pill">
@@ -998,7 +998,7 @@
     </header>
 
     <!-- Permanent Android APK Button -->
-    <a id="android-apk-btn" href="cueflex-app.apk" download="cueflex-app.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
+    <a id="android-apk-btn" href="doctransit-app.apk" download="doctransit-app.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
       [ DOWNLOAD NATIVE ANDROID APK ]
     </a>
 
@@ -1124,7 +1124,7 @@
 
   <script>
     const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
-    const WORKER_URL = window.CUEFLEX_WORKER_URL || (isFileOrLocal ? 'wss://cueflex.shahdev0710.workers.dev' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
+    const WORKER_URL = window.DOCTRANSIT_WORKER_URL || (isFileOrLocal ? 'wss://doctransit.shahdev0710.workers.dev' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
     const HTTP_URL = WORKER_URL.replace('ws://', 'http://').replace('wss://', 'https://');
 
     const state = {
@@ -1151,10 +1151,10 @@
     const PEER_SESSION_ID = new URLSearchParams(window.location.search).get('s');
 
     if (PHONE_MODE) {
-      document.title = 'CueFlex — Phone';
+      document.title = 'DocTransit — Phone';
       window.addEventListener('DOMContentLoaded', initPhoneMode);
     } else if (PEER_SESSION_ID && PEER_SESSION_ID.length === 12) {
-      document.title = 'CueFlex — Peer Transfer';
+      document.title = 'DocTransit — Peer Transfer';
       window.addEventListener('DOMContentLoaded', () => initPeerMode(PEER_SESSION_ID));
     } else {
       window.addEventListener('DOMContentLoaded', initPCMode);
@@ -1288,11 +1288,11 @@
     function recordMySessionHistory(sid) {
       if (!sid) return;
       try {
-        const list = JSON.parse(localStorage.getItem('cueflex_my_history') || '[]');
+        const list = JSON.parse(localStorage.getItem('doctransit_my_history') || '[]');
         if (!list.includes(sid)) {
           list.push(sid);
           if (list.length > 20) list.shift();
-          localStorage.setItem('cueflex_my_history', JSON.stringify(list));
+          localStorage.setItem('doctransit_my_history', JSON.stringify(list));
         }
       } catch (e) {}
     }
@@ -1301,7 +1301,7 @@
       if (!sid) return false;
       if (sid === state.sessionId) return true;
       try {
-        const list = JSON.parse(localStorage.getItem('cueflex_my_history') || '[]');
+        const list = JSON.parse(localStorage.getItem('doctransit_my_history') || '[]');
         return list.includes(sid);
       } catch (e) {
         return false;
@@ -1320,7 +1320,7 @@
       try {
         recordMySessionHistory(state.sessionId);
         const currentSid = state.sessionId;
-        const history = (JSON.parse(localStorage.getItem('cueflex_my_history') || '[]')).join(',');
+        const history = (JSON.parse(localStorage.getItem('doctransit_my_history') || '[]')).join(',');
         const res = await fetch(`${HTTP_URL}/nearby?current=${currentSid}&ping=${currentSid}&excludes=${history}`);
         const data = await res.json();
         const devices = (data.devices || []).filter(d => !isMyHistorySession(d.session_id));
@@ -1417,14 +1417,14 @@
 
     let isCreatingSession = false;
     async function createSession(forceNew = false) {
-      const oldSid = state.sessionId || sessionStorage.getItem('cueflex_session_id') || '';
+      const oldSid = state.sessionId || sessionStorage.getItem('doctransit_session_id') || '';
       if (forceNew) {
         if (!checkRateLimit()) return;
         if (oldSid) {
           try { fetch(`${HTTP_URL}/nearby?unregister=${oldSid}`); } catch(e){}
         }
-        sessionStorage.removeItem('cueflex_session_id');
-        sessionStorage.removeItem('cueflex_session_expiry');
+        sessionStorage.removeItem('doctransit_session_id');
+        sessionStorage.removeItem('doctransit_session_expiry');
       }
       if (isCreatingSession) return;
       isCreatingSession = true;
@@ -1468,8 +1468,8 @@
         
         updateTimerDisplay();
 
-        const savedId = sessionStorage.getItem('cueflex_session_id');
-        const savedExpiry = parseInt(sessionStorage.getItem('cueflex_session_expiry') || '0', 10);
+        const savedId = sessionStorage.getItem('doctransit_session_id');
+        const savedExpiry = parseInt(sessionStorage.getItem('doctransit_session_expiry') || '0', 10);
         let data = null;
 
         if (savedId && savedExpiry && savedExpiry > Date.now() + 10000) {
@@ -1480,8 +1480,8 @@
         } else {
           const res = await fetch(`${HTTP_URL}/session/new?previous=${oldSid}`);
           data = await res.json();
-          sessionStorage.setItem('cueflex_session_id', data.session_id);
-          sessionStorage.setItem('cueflex_session_expiry', new Date(data.expires_at).getTime().toString());
+          sessionStorage.setItem('doctransit_session_id', data.session_id);
+          sessionStorage.setItem('doctransit_session_expiry', new Date(data.expires_at).getTime().toString());
         }
 
         if (state.sessionId && state.sessionId !== data.session_id) {
@@ -1789,8 +1789,8 @@
 
     function disconnectSession() {
       clearChatMessages();
-      sessionStorage.removeItem('cueflex_session_id');
-      sessionStorage.removeItem('cueflex_session_expiry');
+      sessionStorage.removeItem('doctransit_session_id');
+      sessionStorage.removeItem('doctransit_session_expiry');
       if (state.ws) {
         const oldWs = state.ws;
         state.ws = null;
@@ -1882,7 +1882,7 @@
         {
           name: 'HKDF',
           hash: 'SHA-256',
-          salt: enc.encode('cueflex-v2'),
+          salt: enc.encode('doctransit-v2'),
           info: enc.encode('file-transfer')
         },
         baseKey,
@@ -2222,7 +2222,11 @@
           mimeType: t.mime_type,
           blobUrl: blobUrl
         });
+        currentReceivedViewIndex = state.receivedFiles.length - 1; // Auto-show the newest file
         renderReceivedFiles();
+        
+        // Debug alert to confirm PC received it
+        alert(`DEBUG: PC successfully received ${t.filename} (Size: ${t.size} bytes). Showing in UI now.`);
 
         state.currentTransfer = null;
         if (state.sendQueue.length > 0) {
@@ -2538,7 +2542,7 @@
         }
         phoneProceedToConnected(s);
       } else {
-        const saved = localStorage.getItem('cueflex_phone_session_id');
+        const saved = localStorage.getItem('doctransit_phone_session_id');
         if (saved) {
           phoneProceedToConnected(saved);
         } else {
@@ -2661,7 +2665,7 @@
 
     async function phoneProceedToConnected(sessionId) {
       phoneState.sessionId = sessionId;
-      localStorage.setItem('cueflex_phone_session_id', sessionId);
+      localStorage.setItem('doctransit_phone_session_id', sessionId);
       phoneShowScreen('connected');
       const infoEl = document.getElementById('phone-session-info');
       if (infoEl) infoEl.innerText = `SESSION ID: ${sessionId}`;

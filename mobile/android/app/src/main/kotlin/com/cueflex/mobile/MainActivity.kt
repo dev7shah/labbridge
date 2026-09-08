@@ -1,4 +1,4 @@
-package com.cueflex.mobile
+package com.doctransit.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AppConfig {
   // Production worker URL — update this before building for release
   static const String defaultWorkerUrl =
-      'wss://cueflex.shahdev0710.workers.dev';
+      'wss://doctransit.shahdev0710.workers.dev';
 
   // Dev fallbacks
   static const String androidEmulatorUrl = 'ws://10.0.2.2:8787';

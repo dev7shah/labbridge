@@ -1,9 +1,9 @@
-# CueFlex: Comprehensive AI Context & Codebase Documentation
+# DocTransit: Comprehensive AI Context & Codebase Documentation
 
-This document is designed specifically to provide context for AI agents reading or modifying this codebase. It contains a deep dive into the architecture, dependencies, state management, edge cases, and cryptographic implementation details of the CueFlex project.
+This document is designed specifically to provide context for AI agents reading or modifying this codebase. It contains a deep dive into the architecture, dependencies, state management, edge cases, and cryptographic implementation details of the DocTransit project.
 
 ## 1. Project Overview & Philosophy
-CueFlex is an ultra-fast, browser-based peer-to-peer file transfer and messaging bridge between a desktop/laptop (PC) and a mobile device. 
+DocTransit is an ultra-fast, browser-based peer-to-peer file transfer and messaging bridge between a desktop/laptop (PC) and a mobile device. 
 - **Core Philosophy:** Zero app installations, zero user accounts, zero cloud storage.
 - **Tech Stack:** Vanilla HTML/JS/CSS (Frontend) + Cloudflare Workers / Durable Objects (Backend).
 - **Security:** Strict End-to-End Encryption (E2EE). The server (Relay) is completely blind to payloads.
@@ -41,7 +41,7 @@ Both `index.html` and `phone.html` use no external frontend frameworks (No React
 - Design language: Monospaced, dark-themed, "hacker/terminal" aesthetic. High contrast, sharp edges (border-radius: 0).
 
 **Connection Resilience:**
-- Session IDs are stored in `localStorage` (`cueflex_session_id`, `cueflex_session_expiry`).
+- Session IDs are stored in `localStorage` (`doctransit_session_id`, `doctransit_session_expiry`).
 - If the browser is refreshed or the phone goes to sleep, the frontend script (`createSession(false)`) attempts to resume the stored session before requesting a new one.
 
 ## 4. Backend Architecture (Cloudflare Workers + Durable Objects)
@@ -64,7 +64,7 @@ All data (files and chat messages) is encrypted client-side using the Web Crypto
 
 1. **Key Derivation (HKDF):** 
    - The 12-character Session ID acts as the base secret.
-   - Using `SHA-256`, salt `cueflex-v2`, and info `file-transfer`, it derives a 256-bit `AES-GCM` CryptoKey.
+   - Using `SHA-256`, salt `doctransit-v2`, and info `file-transfer`, it derives a 256-bit `AES-GCM` CryptoKey.
 2. **Chunking & Encryption:**
    - Files are sliced into 512KB chunks.
    - A random 12-byte Initialization Vector (IV) is generated via `crypto.getRandomValues`.
