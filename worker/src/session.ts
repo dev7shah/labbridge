@@ -154,11 +154,11 @@ export class Session extends DurableObject {
 
       const excludeSet = new Set([current, previous, unregister, ...excludes].filter(Boolean));
       const devices = Object.entries(nearbyMap)
-        .filter(([id]) => !excludeSet.has(id))
+        .filter(([id, val]) => !excludeSet.has(id) && Boolean(clientIp && val.ip && val.ip === clientIp))
         .map(([id, val]) => ({
           session_id: id,
           age_seconds: Math.floor((now - val.ts) / 1000),
-          is_same_ip: Boolean(clientIp && val.ip && val.ip === clientIp)
+          is_same_ip: true
         }));
 
       return Response.json({ devices });
