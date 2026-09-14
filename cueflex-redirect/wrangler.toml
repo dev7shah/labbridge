@@ -1,0 +1,26 @@
+name = "cueflex"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Uncomment and set your account ID before deploying
+# account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "Session"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Session"]
+
+[vars]
+MAX_SESSION_MINUTES = "5"
+MAX_FILE_SIZE_MB = "500"
+# Shortcut mode buffers encrypted chunks in DO storage temporarily
+# Each chunk is max 512KB, deleted immediately after phone_ack
+# DO storage limit: 128MB per object — well within 500MB file limit
+# for typical lab files (code, PDFs, screenshots)
+
+# No logs of file data
+[observability]
+enabled = false

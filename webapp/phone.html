@@ -7,7 +7,7 @@
   <meta property="og:title" content="DocTransit">
   <meta property="og:description" content="Zero-cloud P2P encrypted file transfer for your local network and beyond.">
   <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg">
-  <meta property="og:url" content="https://doctransit.shahdev0710.workers.dev/">
+  <meta property="og:url" content="https://doctransit.in/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="/icon.png" />
@@ -667,12 +667,12 @@
           state.workerHttpUrl = savedUrl;
         } else {
           const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
-          state.workerHttpUrl = isFileOrLocal ? 'https://doctransit.shahdev0710.workers.dev' : window.location.origin;
+          state.workerHttpUrl = isFileOrLocal ? 'https://doctransit.in' : window.location.origin;
         }
 
         // Fallback: if workerHttpUrl is still empty, hardcode it
         if (!state.workerHttpUrl) {
-          state.workerHttpUrl = 'https://doctransit.shahdev0710.workers.dev';
+          state.workerHttpUrl = 'https://doctransit.in';
         }
 
         const urlInput = document.getElementById('worker-url-input');

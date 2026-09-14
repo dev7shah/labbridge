@@ -7,7 +7,7 @@
   <meta property="og:title" content="DocTransit">
   <meta property="og:description" content="Zero-cloud P2P encrypted file transfer for your local network and beyond.">
   <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg">
-  <meta property="og:url" content="https://doctransit.shahdev0710.workers.dev/">
+  <meta property="og:url" content="https://doctransit.in/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/icon.png" />
   <script src="/fflate.min.js"></script>
@@ -1124,7 +1124,7 @@
 
   <script>
     const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
-    const WORKER_URL = window.DOCTRANSIT_WORKER_URL || (isFileOrLocal ? 'wss://doctransit.shahdev0710.workers.dev' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
+    const WORKER_URL = window.DOCTRANSIT_WORKER_URL || (isFileOrLocal ? 'wss://doctransit.in' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
     const HTTP_URL = WORKER_URL.replace('ws://', 'http://').replace('wss://', 'https://');
 
     const state = {
