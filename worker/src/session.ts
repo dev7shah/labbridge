@@ -328,6 +328,15 @@ export class Session extends DurableObject {
         });
         const peerRole = peerAtt ? (peerAtt.deserializeAttachment() as SocketAttachment)?.role : "phone";
         server.send(JSON.stringify({ type: "paired", device: peerRole === "peer" ? "PC (Peer)" : "phone" }));
+
+        // Notify the already-connected phone/peer that the PC has (re)connected —
+        // otherwise a phone/peer left waiting after a PC drop never learns the PC is back.
+        for (const ws of existing) {
+          const att = ws.deserializeAttachment() as SocketAttachment | null;
+          if (att?.role === "phone" || att?.role === "peer") {
+            ws.send(JSON.stringify({ type: "paired", device: "PC (Host)" }));
+          }
+        }
       } else {
         server.send(JSON.stringify({ type: "waiting" }));
       }

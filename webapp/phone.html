@@ -997,6 +997,8 @@
         disconnectPhoneSession();
       } else if (msg.type === 'peer_disconnected') {
         setStatus(false, 'PC DROPPED (WAITING FOR RECONNECT...)');
+      } else if (msg.type === 'paired') {
+        setStatus(true, 'CONNECTED');
       }
     }
 

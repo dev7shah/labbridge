@@ -164,6 +164,15 @@ class TransferService extends ChangeNotifier {
             _ackCompleter!.complete(idx);
           }
           break;
+        case 'paired':
+          // Server confirms the PC peer is (re)connected. Clear any
+          // 'reconnecting' state left over from a prior peer_disconnected.
+          if (_status == ConnectionStatus.reconnecting) {
+            _status = ConnectionStatus.connected;
+            _connectionStatusController.add(ConnectionStatus.connected);
+            notifyListeners();
+          }
+          break;
         case 'disconnected':
           disconnect(sendSignal: false);
           break;
