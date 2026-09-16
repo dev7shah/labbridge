@@ -1795,8 +1795,12 @@
         const oldWs = state.ws;
         state.ws = null;
         oldWs.onclose = null;
-        try { oldWs.send(JSON.stringify({ type: 'disconnected' })); } catch (e) {}
-        try { oldWs.close(); } catch (e) {}
+        if (oldWs.readyState === 1) { // WebSocket.OPEN
+          try { oldWs.send(JSON.stringify({ type: 'disconnected' })); } catch (e) {}
+          setTimeout(() => { try { oldWs.close(); } catch(e) {} }, 100);
+        } else {
+          try { oldWs.close(); } catch (e) {}
+        }
       }
       clearInterval(state.timerInterval);
       setPhase('waiting');
