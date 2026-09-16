@@ -139,7 +139,7 @@ class _TransferScreenState extends State<TransferScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isConnected = _connectionStatus == ConnectionStatus.connected;
+    final isConnected = _connectionStatus == ConnectionStatus.connected || _connectionStatus == ConnectionStatus.reconnecting;
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
@@ -602,6 +602,11 @@ class _TransferScreenState extends State<TransferScreen> {
         label = '[ CONNECTION ERROR ]';
         color = const Color(0xFFEF4444);
         break;
+      case ConnectionStatus.reconnecting:
+        icon = Icons.hourglass_empty;
+        label = '[ WAITING FOR RECONNECT ]';
+        color = const Color(0xFFEAB308); // Yellow
+        break;
       case ConnectionStatus.disconnected:
         icon = Icons.link_off;
         label = '[ DISCONNECTED ]';
@@ -638,7 +643,7 @@ class _TransferScreenState extends State<TransferScreen> {
               ),
             ),
           ),
-          if (_connectionStatus == ConnectionStatus.connecting)
+          if (_connectionStatus == ConnectionStatus.connecting || _connectionStatus == ConnectionStatus.reconnecting)
             SizedBox(
               width: 16,
               height: 16,

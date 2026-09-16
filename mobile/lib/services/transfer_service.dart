@@ -15,7 +15,7 @@ import '../core/config.dart';
 import 'crypto_service.dart';
 import 'db_service.dart';
 
-enum ConnectionStatus { disconnected, connecting, connected, error }
+enum ConnectionStatus { disconnected, connecting, connected, error, reconnecting }
 
 class TransferProgress {
   final String fileName;
@@ -166,6 +166,18 @@ class TransferService extends ChangeNotifier {
           break;
         case 'disconnected':
           disconnect(sendSignal: false);
+          break;
+        case 'peer_disconnected':
+          _errorController.add('PC disconnected. Waiting for reconnect...');
+          _status = ConnectionStatus.reconnecting;
+          _connectionStatusController.add(ConnectionStatus.reconnecting);
+          notifyListeners();
+          if (_readyCompleter != null && !_readyCompleter!.isCompleted) {
+            _readyCompleter!.completeError(StateError('Peer disconnected'));
+          }
+          if (_ackCompleter != null && !_ackCompleter!.isCompleted) {
+            _ackCompleter!.completeError(StateError('Peer disconnected'));
+          }
           break;
         case 'cancelled':
           if (_ackCompleter != null && !_ackCompleter!.isCompleted) {
