@@ -164,7 +164,7 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
                   fontSize: 14,
                 ),
                 decoration: const InputDecoration(
-                  hintText: 'e.g. lb_session_abc123',
+                  hintText: 'e.g. abc123def456',
                   hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 13, fontFamily: 'monospace'),
                   filled: true,
                   fillColor: Color(0xFF121214),
@@ -194,7 +194,7 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
                     ),
                     onPressed: () async {
                       final id = controller.text.trim();
-                      if (id.isNotEmpty) {
+                      if (id.length == 12 && RegExp(r'^[a-zA-Z0-9]+$').hasMatch(id)) {
                         Navigator.pop(context);
                         await _connectAndReturn(id);
                       }

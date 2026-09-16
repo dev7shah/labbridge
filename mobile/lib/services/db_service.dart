@@ -52,10 +52,8 @@ class DbService {
       },
       onCreate: _onCreate,
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Simple strategy for ephemeral data: drop and recreate
-        await db.execute('DROP TABLE IF EXISTS transfers');
-        await db.execute('DROP TABLE IF EXISTS files');
-        await db.execute('DROP TABLE IF EXISTS folders');
+        // v2: Add columns or tables if needed. 
+        // We no longer drop tables to preserve user data.
         await _createTables(db);
       },
     );
@@ -67,7 +65,7 @@ class DbService {
 
   Future<void> _createTables(DatabaseExecutor db) async {
     await db.execute('''
-      CREATE TABLE folders (
+      CREATE TABLE IF NOT EXISTS folders (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         parent_id TEXT,
@@ -78,7 +76,7 @@ class DbService {
     ''');
 
     await db.execute('''
-      CREATE TABLE files (
+      CREATE TABLE IF NOT EXISTS files (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         local_path TEXT NOT NULL,
@@ -91,7 +89,7 @@ class DbService {
     ''');
 
     await db.execute('''
-      CREATE TABLE transfers (
+      CREATE TABLE IF NOT EXISTS transfers (
         id TEXT PRIMARY KEY,
         file_name TEXT NOT NULL,
         size INTEGER NOT NULL,
@@ -102,38 +100,43 @@ class DbService {
       )
     ''');
 
-    // Seed default folders
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final sem1Id = _uuid.v4();
-    final sem2Id = _uuid.v4();
-    final labPracticalsId = _uuid.v4();
+    // Seed default folders only if empty
+    final countList = await db.rawQuery('SELECT COUNT(*) as count FROM folders');
+    final count = Sqflite.firstIntValue(countList) ?? 0;
+    
+    if (count == 0) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final sem1Id = _uuid.v4();
+      final sem2Id = _uuid.v4();
+      final labPracticalsId = _uuid.v4();
 
-    await db.insert('folders', {
-      'id': sem1Id,
-      'name': 'Semester 1',
-      'parent_id': null,
-      'color': '#6C63FF',
-      'sort_order': 0,
-      'created_at': now,
-    });
+      await db.insert('folders', {
+        'id': sem1Id,
+        'name': 'Semester 1',
+        'parent_id': null,
+        'color': '#6C63FF',
+        'sort_order': 0,
+        'created_at': now,
+      });
 
-    await db.insert('folders', {
-      'id': sem2Id,
-      'name': 'Semester 2',
-      'parent_id': null,
-      'color': '#22C55E',
-      'sort_order': 1,
-      'created_at': now,
-    });
+      await db.insert('folders', {
+        'id': sem2Id,
+        'name': 'Semester 2',
+        'parent_id': null,
+        'color': '#22C55E',
+        'sort_order': 1,
+        'created_at': now,
+      });
 
-    await db.insert('folders', {
-      'id': labPracticalsId,
-      'name': 'Lab Practicals',
-      'parent_id': sem1Id,
-      'color': '#EF4444',
-      'sort_order': 0,
-      'created_at': now,
-    });
+      await db.insert('folders', {
+        'id': labPracticalsId,
+        'name': 'Lab Practicals',
+        'parent_id': sem1Id,
+        'color': '#EF4444',
+        'sort_order': 0,
+        'created_at': now,
+      });
+    }
   }
 
   Future<void> init() async {

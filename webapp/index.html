@@ -1469,9 +1469,24 @@
           };
         } else {
           const res = await fetch(`${HTTP_URL}/session/new?previous=${oldSid}`);
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            const errEl = document.getElementById('rate-limit-error');
+            if (errEl) {
+              errEl.innerText = errData.error || 'Server error. Please try again later.';
+              errEl.style.display = 'block';
+            }
+            isCreatingSession = false;
+            return;
+          }
           data = await res.json();
           sessionStorage.setItem('doctransit_session_id', data.session_id);
           sessionStorage.setItem('doctransit_session_expiry', new Date(data.expires_at).getTime().toString());
+        }
+
+        if (!data || !data.session_id) {
+          isCreatingSession = false;
+          return;
         }
 
         if (state.sessionId && state.sessionId !== data.session_id) {

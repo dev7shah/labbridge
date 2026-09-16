@@ -116,9 +116,6 @@ class TransferService extends ChangeNotifier {
           disconnect(sendSignal: false);
         },
         onDone: () {
-          _status = ConnectionStatus.disconnected;
-          _connectionStatusController.add(ConnectionStatus.disconnected);
-          notifyListeners();
           disconnect(sendSignal: false);
         },
       );
