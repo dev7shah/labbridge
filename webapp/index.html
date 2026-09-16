@@ -1112,19 +1112,6 @@
     </div>
   </div>
 
-  <!-- Connection Request Modal -->
-  <div id="connection-request-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; font-family:var(--mono);">
-    <div style="background:var(--surface); border:1px solid var(--border); padding:32px; max-width:420px; width:90%; text-align:center;">
-      <div style="font-size:11px; color:var(--text-3); letter-spacing:2px; margin-bottom:16px;">INCOMING CONNECTION</div>
-      <div style="font-size:16px; font-weight:800; color:#FFFFFF; margin-bottom:8px;">PC WANTS TO CONNECT</div>
-      <div style="font-size:12px; color:var(--text-2); margin-bottom:24px;">Another PC is requesting to join your session for file transfer.</div>
-      <div style="display:flex; gap:12px; justify-content:center;">
-        <button onclick="acceptPeerConnection()" style="flex:1; background:#22c55e; color:#000000; border:none; padding:14px; font-family:var(--mono); font-size:12px; font-weight:800; cursor:pointer; letter-spacing:1px;">[ ACCEPT ]</button>
-        <button onclick="declinePeerConnection()" style="flex:1; background:var(--surface-2); color:#EF4444; border:1px solid #EF4444; padding:14px; font-family:var(--mono); font-size:12px; font-weight:800; cursor:pointer; letter-spacing:1px;">[ DECLINE ]</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname);
     const WORKER_URL = window.DOCTRANSIT_WORKER_URL || (isFileOrLocal ? 'wss://doctransit.in' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
@@ -1716,28 +1703,7 @@
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
           state.ws.send(JSON.stringify({ type: 'ready' }));
         }
-      } else if (msg.type === 'connection_request') {
-        const modal = document.getElementById('connection-request-modal');
-        if (modal) modal.style.display = 'flex';
-      } else if (msg.type === 'connection_accept') {
-        if (state.timerInterval) clearInterval(state.timerInterval);
-        state.expirySeconds = 240;
-        updateTimerDisplay();
-        state.connectedDevice = msg.device || 'PC (Host)';
-        setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (${state.expirySeconds}s LEFT)`);
-        document.getElementById('btn-disconnect').style.display = 'block';
-        if (!state.cryptoKey) {
-          state.cryptoKey = await deriveAESKey(state.sessionId);
-        }
-        if (state.phase !== 'paired' && state.phase !== 'transferring') {
-          setPhase('paired');
-        }
-      } else if (msg.type === 'connection_decline') {
-        alert('Host declined the connection request.');
-        setPhase('waiting');
-        if (state.ws) {
-          try { state.ws.close(); } catch(e){}
-        }
+
       } else if (msg.type === 'cancelled') {
         alert('Transfer cancelled by phone');
         setPhase('paired');
@@ -1748,31 +1714,6 @@
       }
     }
 
-    async function acceptPeerConnection() {
-      const modal = document.getElementById('connection-request-modal');
-      if (modal) modal.style.display = 'none';
-      state.connectedDevice = 'PC (Peer)';
-      if (state.timerInterval) clearInterval(state.timerInterval);
-      state.expirySeconds = 240;
-      updateTimerDisplay();
-      setStatus(true, `CONNECTED: PC (PEER) (${state.expirySeconds}s LEFT)`);
-      document.getElementById('btn-disconnect').style.display = 'block';
-      if (!state.cryptoKey) {
-        state.cryptoKey = await deriveAESKey(state.sessionId);
-      }
-      setPhase('paired');
-      if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-        state.ws.send(JSON.stringify({ type: 'connection_accept', device: 'PC (Host)' }));
-      }
-    }
-
-    function declinePeerConnection() {
-      const modal = document.getElementById('connection-request-modal');
-      if (modal) modal.style.display = 'none';
-      if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-        state.ws.send(JSON.stringify({ type: 'connection_decline' }));
-      }
-    }
 
     function setStatus(active, text) {
       const dot = document.getElementById('status-dot');

@@ -1,5 +1,5 @@
 name = "cueflex"
-main = "src/index.ts"
+main = "index.js"
 compatibility_date = "2025-01-01"
 
 # Uncomment and set your account ID before deploying
