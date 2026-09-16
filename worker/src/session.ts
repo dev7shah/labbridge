@@ -287,11 +287,16 @@ export class Session extends DurableObject {
       return new Response("Expected WebSocket upgrade", { status: 426 });
     }
 
-    // Enforce one-PC, one-phone policy: if reconnecting, replace existing socket
+    // Enforce strictly two-party policy: one PC, one client (phone or peer)
     const existing = this.ctx.getWebSockets();
     for (const ws of existing) {
       const att = ws.deserializeAttachment() as SocketAttachment | null;
-      if (att && att.role === role) {
+      if (!att) continue;
+      
+      const isClientRole = role === "phone" || role === "peer";
+      const isExistingClient = att.role === "phone" || att.role === "peer";
+      
+      if (att.role === role || (isClientRole && isExistingClient)) {
         try { ws.close(1000, "Replaced by new connection"); } catch (_) {}
       }
     }
