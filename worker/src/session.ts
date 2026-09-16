@@ -540,9 +540,8 @@ export class Session extends DurableObject {
     const other = getOtherSocket(sockets, ws);
     if (other) {
       try {
-        // We can optionally notify the peer that the device temporarily disconnected,
-        // but for resilience, we just let it wait.
-        // other.send(JSON.stringify({ type: "peer_disconnected" }));
+        // Notify the peer that the device temporarily disconnected
+        other.send(JSON.stringify({ type: "peer_disconnected" }));
       } catch {
         // ignore
       }

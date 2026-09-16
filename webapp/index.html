@@ -1578,17 +1578,26 @@
           setTimeout(connectWebSocket, 1000);
         }
       } else {
-        setStatus(false, 'DISCONNECTED BY PEER');
-        document.getElementById('btn-disconnect').style.display = 'none';
-        clearInterval(state.timerInterval);
-        const oldWs = state.ws;
-        state.ws = null;
-        if (oldWs) {
-          oldWs.onclose = null;
-          try { oldWs.close(); } catch (e) {}
+        // We are paired (host mode).
+        if (event) {
+          // OUR websocket dropped due to network blip. Try to reconnect to the same session!
+          reconnectAttempts++;
+          setStatus(false, 'RECONNECTING...');
+          setTimeout(connectWebSocket, 1500);
+        } else {
+          // Peer explicitly sent { type: 'disconnected' }
+          setStatus(false, 'DISCONNECTED BY PEER');
+          document.getElementById('btn-disconnect').style.display = 'none';
+          clearInterval(state.timerInterval);
+          const oldWs = state.ws;
+          state.ws = null;
+          if (oldWs) {
+            oldWs.onclose = null;
+            try { oldWs.close(); } catch (e) {}
+          }
+          setPhase('waiting');
+          createSession();
         }
-        setPhase('waiting');
-        createSession();
       }
     }
 
@@ -1731,6 +1740,8 @@
         setPhase('paired');
       } else if (msg.type === 'disconnected') {
         handlePeerDisconnected();
+      } else if (msg.type === 'peer_disconnected') {
+        setStatus(false, 'PHONE DROPPED (WAITING FOR RECONNECT...)');
       }
     }
 
