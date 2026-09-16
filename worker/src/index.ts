@@ -45,11 +45,11 @@ function checkRateLimit(ip: string, limit: number, windowMs: number): boolean {
     }
   }
   // Hard cap safeguard - delete oldest elements efficiently
-  if (ipRequests.size > 10000) {
+  if (ipRequests.size > 1000) {
     let dropped = 0;
     for (const key of ipRequests.keys()) {
       ipRequests.delete(key);
-      if (++dropped >= 2000) break;
+      if (++dropped >= 200) break;
     }
   }
 

@@ -79,6 +79,7 @@ class TransferService extends ChangeNotifier {
   Completer<int>? _ackCompleter;
 
   ConnectionStatus _status = ConnectionStatus.disconnected;
+  bool _isDisconnecting = false;
   ConnectionStatus get currentStatus => _status;
 
   /// Connect to the Worker WebSocket
@@ -561,7 +562,10 @@ class TransferService extends ChangeNotifier {
 
   /// Disconnect from WebSocket
   Future<void> disconnect({bool sendSignal = true}) async {
-    if (sendSignal && _channel != null) {
+    if (_isDisconnecting || _status == ConnectionStatus.disconnected) return;
+    _isDisconnecting = true;
+    try {
+      if (sendSignal && _channel != null) {
       try {
         _channel!.sink.add(json.encode({'type': 'disconnected'}));
       } catch (_) {}
@@ -602,6 +606,9 @@ class TransferService extends ChangeNotifier {
     _connectionStatusController.add(ConnectionStatus.disconnected);
     _progressController.add(null);
     notifyListeners();
+    } finally {
+      _isDisconnecting = false;
+    }
   }
 
   /// Clean up resources

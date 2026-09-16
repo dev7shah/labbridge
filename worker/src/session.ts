@@ -131,10 +131,19 @@ export class Session extends DurableObject {
       const now = Date.now();
 
       // Clean up old entries older than 60 seconds (active waiting pool)
+      let count = 0;
       for (const [id, val] of Object.entries(nearbyMap)) {
         if (!val || typeof val.ts !== 'number' || (now - val.ts > 60 * 1000)) {
           delete nearbyMap[id];
+        } else {
+          count++;
         }
+      }
+
+      // Hard cardinality cap - if somehow we still have > 500 entries, evict oldest
+      if (count > 500) {
+        const sorted = Object.entries(nearbyMap).sort((a, b) => b[1].ts - a[1].ts);
+        nearbyMap = Object.fromEntries(sorted.slice(0, 500));
       }
 
       // Unregister previous or specified session ID if provided
