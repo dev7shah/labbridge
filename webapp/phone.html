@@ -1019,21 +1019,16 @@
         const result = await decryptChunk(buffer, state.cryptoKey, state.receiving.received);
         const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : state.receiving.received;
         state.receiving.chunks[idx] = result.plaintext;
-        
-        let receivedCount = 0;
-        for (let i = 0; i < state.receiving.total_chunks; i++) {
-          if (state.receiving.chunks[i] != null) receivedCount++;
-        }
-        state.receiving.received = receivedCount;
+        state.receiving.received++;
 
-        const pct = Math.round((receivedCount / state.receiving.total_chunks) * 100);
+        const pct = Math.round((state.receiving.received / state.receiving.total_chunks) * 100);
         updateProgress(pct);
 
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
           state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
         }
 
-        if (receivedCount >= state.receiving.total_chunks) {
+        if (state.receiving.received >= state.receiving.total_chunks) {
           finalizeReceivedFile();
         }
       } catch (err) {

@@ -63,6 +63,8 @@ export class Session extends DurableObject {
   private _maxExpiresAt: number | null = null;
   private _bytesTransferred: number = 0;
   private _lastAlarmSet: number = 0;
+  private _shortcutModeChecked: boolean = false;
+  private _isShortcutMode: boolean = false;
 
   private async extendAlarm(durationMs = 4 * 60 * 1000): Promise<void> {
     if (!this._createdAt) {
@@ -413,24 +415,27 @@ export class Session extends DurableObject {
           return;
         }
 
-        // Check if we are in shortcut buffering mode (ONLY when PC sends chunks to iOS Shortcut)
-        const pending = await this.ctx.storage.get<PendingFile>("pending_file");
-        if (isFromPc && pending?.shortcutMode) {
-          // Reject chunks beyond the declared total
+        // Check shortcut mode using cached flag to avoid storage read on every chunk
+        if (!this._shortcutModeChecked) {
+          const pending = await this.ctx.storage.get<PendingFile>("pending_file");
+          this._isShortcutMode = !!(isFromPc && pending?.shortcutMode);
+          this._shortcutModeChecked = true;
+        }
+
+        if (isFromPc && this._isShortcutMode) {
+          const pending = await this.ctx.storage.get<PendingFile>("pending_file");
+          if (!pending) return;
           if (pending.receivedChunks >= pending.totalChunks) {
             ws.send(JSON.stringify({ type: "error", message: "All chunks already received" }));
             return;
           }
-          // Buffer this chunk in storage for the Shortcut to fetch
           const chunkIndex = pending.receivedChunks;
           await this.ctx.storage.put(`chunk_${chunkIndex}`, message);
           pending.receivedChunks++;
           await this.ctx.storage.put("pending_file", pending);
 
-          // ACK each chunk back to PC so it keeps sending
           ws.send(JSON.stringify({ type: "ack", chunk_index: chunkIndex }));
 
-          // Extend alarm every 10 chunks to reduce storage ops
           if (chunkIndex % 10 === 0) {
             await this.extendAlarm(4 * 60 * 1000);
           }
@@ -441,7 +446,7 @@ export class Session extends DurableObject {
           return;
         }
 
-        // Normal relay mode — forward to other peer
+        // Normal relay mode — forward to other peer (no storage hit)
         other.send(message);
         return;
       }

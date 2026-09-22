@@ -2109,14 +2109,9 @@
         const result = await decryptChunk(buffer, state.cryptoKey, transfer.receivedChunks);
         idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : transfer.receivedChunks;
         transfer.chunksData[idx] = new Blob([result.plaintext]);
-        
-        let receivedCount = 0;
-        for (let i = 0; i < transfer.total_chunks; i++) {
-          if (transfer.chunksData[i] != null) receivedCount++;
-        }
-        transfer.receivedChunks = receivedCount;
+        transfer.receivedChunks++;
 
-        const pct = Math.min(100, Math.round((receivedCount / transfer.total_chunks) * 100));
+        const pct = Math.min(100, Math.round((transfer.receivedChunks / transfer.total_chunks) * 100));
         updateProgressDisplay(transfer.filename, transfer.size, pct);
 
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
@@ -2769,21 +2764,16 @@
         const result = await decryptChunk(buffer, phoneState.cryptoKey, transfer.receivedChunks);
         const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : transfer.receivedChunks;
         transfer.chunksData[idx] = new Blob([result.plaintext]);
-        
-        let receivedCount = 0;
-        for (let i = 0; i < transfer.total_chunks; i++) {
-          if (transfer.chunksData[i] != null) receivedCount++;
-        }
-        transfer.receivedChunks = receivedCount;
+        transfer.receivedChunks++;
 
-        const pct = Math.min(100, Math.round((receivedCount / transfer.total_chunks) * 100));
+        const pct = Math.min(100, Math.round((transfer.receivedChunks / transfer.total_chunks) * 100));
         phoneUpdateProgressDisplay(transfer.filename, transfer.size, pct);
 
         if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
           phoneState.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
         }
 
-        if (receivedCount >= transfer.total_chunks) {
+        if (transfer.receivedChunks >= transfer.total_chunks) {
           const finalBlob = new Blob(transfer.chunksData, { type: transfer.mime_type });
           transfer.chunksData = null;
 
@@ -2881,64 +2871,75 @@
 
     async function phoneStartSendingChunks() {
       if (!phoneState.currentTransfer || phoneState.currentTransfer.direction !== 'sending') return;
-      phoneSendNextChunk(0);
+      phoneState.currentTransfer.nextIndex = 0;
+      phoneState.currentTransfer.sentChunks = 0;
+      phoneState.currentTransfer.isProcessing = false;
+      phoneStreamNextSendingChunk();
     }
 
-    async function phoneSendNextChunk(chunkIndex) {
+    async function phoneStreamNextSendingChunk() {
       const transfer = phoneState.currentTransfer;
-      if (!transfer || chunkIndex >= transfer.total_chunks) {
-        phoneState.currentTransfer = null;
-        if (phoneState.sendQueue.length > 0) {
-          phoneProcessNextInQueue();
-        } else {
-          phoneShowScreen('done');
-          document.getElementById('phone-done-message').innerText = 'SENT TO PC TERMINAL!';
-          document.getElementById('phone-done-subtext').innerText = transfer ? transfer.filename : 'File sent';
-        }
-        return;
-      }
+      if (!transfer || transfer.direction !== 'sending' || transfer.isProcessing) return;
+      transfer.isProcessing = true;
 
-      let arrayBuffer, encrypted;
       try {
-        const offset = chunkIndex * 512 * 1024;
-        const slice = transfer.file.slice(offset, offset + 512 * 1024);
-        arrayBuffer = await slice.arrayBuffer();
-        encrypted = await encryptChunk(arrayBuffer, phoneState.cryptoKey, chunkIndex);
-      } catch (err) {
-        console.error("Failed to read or encrypt chunk:", err);
-        phoneState.currentTransfer = null;
-        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
-          phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
-        }
-        if (phoneState.sendQueue.length > 0) {
-          phoneProcessNextInQueue();
-        } else {
-          phoneShowScreen('connected');
-          document.getElementById('phone-status-text').innerText = 'ERROR READING FILE';
-        }
-        return;
-      }
+        while (phoneState.currentTransfer === transfer &&
+               transfer.nextIndex < transfer.total_chunks &&
+               (transfer.nextIndex - transfer.sentChunks) < 16) {
 
-      if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
-        phoneState.ws.send(encrypted);
-      }
+          const chunkIndex = transfer.nextIndex;
+          transfer.nextIndex++;
 
-      if (phoneState.senderStallTimer) clearTimeout(phoneState.senderStallTimer);
-      phoneState.senderStallTimer = setTimeout(() => {
-        if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {
-          console.warn(`Phone sender stalled waiting for ACK on chunk ${chunkIndex}`);
-          phoneState.currentTransfer = null;
+          let arrayBuffer, encrypted;
+          try {
+            const offset = chunkIndex * 512 * 1024;
+            const slice = transfer.file.slice(offset, offset + 512 * 1024);
+            arrayBuffer = await slice.arrayBuffer();
+            encrypted = await encryptChunk(arrayBuffer, phoneState.cryptoKey, chunkIndex);
+          } catch (err) {
+            console.error("Failed to read or encrypt chunk:", err);
+            phoneState.currentTransfer = null;
+            if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+              phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+            }
+            if (phoneState.sendQueue.length > 0) {
+              phoneProcessNextInQueue();
+            } else {
+              phoneShowScreen('connected');
+              document.getElementById('phone-status-text').innerText = 'ERROR READING FILE';
+            }
+            return;
+          }
+
           if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
-            phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+            phoneState.ws.send(encrypted);
           }
-          if (phoneState.sendQueue.length > 0) {
-            phoneProcessNextInQueue();
-          } else {
-            phoneShowScreen('connected');
-            document.getElementById('phone-status-text').innerText = 'STALLED - RETRY';
+
+          if (phoneState.senderStallTimer) clearTimeout(phoneState.senderStallTimer);
+          phoneState.senderStallTimer = setTimeout(() => {
+            if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {
+              console.warn(`Phone sender stalled waiting for ACK`);
+              phoneState.currentTransfer = null;
+              if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+                phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+              }
+              if (phoneState.sendQueue.length > 0) {
+                phoneProcessNextInQueue();
+              } else {
+                phoneShowScreen('connected');
+                document.getElementById('phone-status-text').innerText = 'STALLED - RETRY';
+              }
+            }
+          }, 15000);
+        }
+      } finally {
+        if (phoneState.currentTransfer === transfer) {
+          transfer.isProcessing = false;
+          if ((transfer.nextIndex - transfer.sentChunks) < 16 && transfer.nextIndex < transfer.total_chunks) {
+            phoneStreamNextSendingChunk();
           }
         }
-      }, 15000);
+      }
     }
 
     function phoneHandleAck(chunkIndex) {
@@ -2953,7 +2954,18 @@
       const pct = Math.min(100, Math.round((transfer.sentChunks / transfer.total_chunks) * 100));
       phoneUpdateProgressDisplay(transfer.filename, transfer.size, pct);
 
-      phoneSendNextChunk(chunkIndex + 1);
+      if (transfer.sentChunks >= transfer.total_chunks) {
+        phoneState.currentTransfer = null;
+        if (phoneState.sendQueue.length > 0) {
+          phoneProcessNextInQueue();
+        } else {
+          phoneShowScreen('done');
+          document.getElementById('phone-done-message').innerText = 'SENT TO PC TERMINAL!';
+          document.getElementById('phone-done-subtext').innerText = transfer.filename;
+        }
+      } else {
+        phoneStreamNextSendingChunk();
+      }
     }
 
     function phoneCancelTransfer() {
