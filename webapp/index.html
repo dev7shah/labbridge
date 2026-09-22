@@ -2109,7 +2109,10 @@
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
           state.ws.send(JSON.stringify({ type: 'cancelled' }));
         }
-        if (state.sendQueue.length > 0) {
+        if (state.incomingTransferQueue && state.incomingTransferQueue.length > 0) {
+          const nextMsg = state.incomingTransferQueue.shift();
+          handleTextMessage(nextMsg);
+        } else if (state.sendQueue.length > 0) {
           processNextInQueue();
         } else {
           setPhase('paired');
@@ -2203,7 +2206,10 @@
 
 
         state.currentTransfer = null;
-        if (state.sendQueue.length > 0) {
+        if (state.incomingTransferQueue && state.incomingTransferQueue.length > 0) {
+          const nextMsg = state.incomingTransferQueue.shift();
+          handleTextMessage(nextMsg);
+        } else if (state.sendQueue.length > 0) {
           processNextInQueue();
         } else {
           setPhase('paired');

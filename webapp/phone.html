@@ -943,6 +943,12 @@
       } else if (msg.type === 'text_message') {
         appendChatMessage('PEER', msg.text);
       } else if (msg.type === 'transfer_init') {
+        if (state.receiving || state.sending) {
+          state.incomingTransferQueue = state.incomingTransferQueue || [];
+          state.incomingTransferQueue.push(msg);
+          return;
+        }
+
         state.receiving = {
           filename: msg.filename || 'received_file',
           size: typeof msg.size === 'number' ? msg.size : 0,
@@ -1040,7 +1046,10 @@
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
           state.ws.send(JSON.stringify({ type: 'cancelled' }));
         }
-        if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {
+        if (state.incomingTransferQueue && state.incomingTransferQueue.length > 0) {
+          const nextMsg = state.incomingTransferQueue.shift();
+          handleTextMessage(nextMsg);
+        } else if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {
           processNextPhoneSend();
         } else {
           document.getElementById('section-transferring').style.display = 'none';
@@ -1080,6 +1089,10 @@
       document.getElementById('section-transferring').style.display = 'none';
       document.getElementById('card-connected').style.display = 'block';
       state.receiving = null;
+      if (state.incomingTransferQueue && state.incomingTransferQueue.length > 0) {
+        const nextMsg = state.incomingTransferQueue.shift();
+        handleTextMessage(nextMsg);
+      }
 
       const blob = new Blob(rec.chunks, { type: rec.mime_type });
 
