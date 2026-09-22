@@ -1132,7 +1132,9 @@
       sendQueue: [],
       receivedFiles: [],
       photoIndices: [],
-      isPeerMode: false
+      isPeerMode: false,
+      rtcPeerConnection: null,
+      rtcDataChannel: null
     };
 
     const PHONE_MODE = new URLSearchParams(window.location.search).get('mode') === 'phone'
@@ -1614,6 +1616,23 @@
       }
     }
 
+    let isProcessingBinary = false;
+    const binaryQueue = [];
+    
+    async function processBinaryQueue() {
+      if (isProcessingBinary) return;
+      isProcessingBinary = true;
+      try {
+        while (binaryQueue.length > 0) {
+          let buffer = binaryQueue.shift();
+          if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+          await handleIncomingBinaryChunk(buffer);
+        }
+      } finally {
+        isProcessingBinary = false;
+      }
+    }
+
     function connectWebSocket() {
       if (state.ws) {
         const old = state.ws;
@@ -1628,23 +1647,6 @@
         reconnectAttempts = 0;
         setStatus(false, 'WAITING FOR PHONE...');
       };
-
-      let isProcessingBinary = false;
-      const binaryQueue = [];
-      
-      async function processBinaryQueue() {
-        if (isProcessingBinary) return;
-        isProcessingBinary = true;
-        try {
-          while (binaryQueue.length > 0) {
-            let buffer = binaryQueue.shift();
-            if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
-            await handleIncomingBinaryChunk(buffer);
-          }
-        } finally {
-          isProcessingBinary = false;
-        }
-      }
 
       ws.onmessage = (event) => {
         if (typeof event.data === 'string') {
@@ -1663,6 +1665,63 @@
 
       ws.onclose = (event) => {
         handlePeerDisconnected(event);
+      };
+    }
+
+    async function initWebRTC(isCaller) {
+      if (state.rtcPeerConnection) {
+        state.rtcPeerConnection.close();
+      }
+      
+      const config = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      };
+      
+      const pc = new RTCPeerConnection(config);
+      state.rtcPeerConnection = pc;
+      
+      pc.onicecandidate = (event) => {
+        if (event.candidate && state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'webrtc_ice', candidate: event.candidate }));
+        }
+      };
+      
+      pc.onconnectionstatechange = () => {
+        console.log('WebRTC state:', pc.connectionState);
+      };
+
+      if (isCaller) {
+        const dc = pc.createDataChannel('fileTransfer', { negotiated: true, id: 0 });
+        setupDataChannel(dc);
+        
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'webrtc_offer', sdp: pc.localDescription }));
+        }
+      } else {
+        const dc = pc.createDataChannel('fileTransfer', { negotiated: true, id: 0 });
+        setupDataChannel(dc);
+      }
+    }
+
+    function setupDataChannel(dc) {
+      dc.binaryType = 'arraybuffer';
+      dc.onopen = () => {
+        console.log('WebRTC DataChannel OPEN');
+        state.rtcDataChannel = dc;
+      };
+      dc.onclose = () => {
+        console.log('WebRTC DataChannel CLOSED');
+        state.rtcDataChannel = null;
+      };
+      dc.onmessage = (event) => {
+        if (typeof event.data !== 'string') {
+          binaryQueue.push(event.data);
+          processBinaryQueue();
+        }
       };
     }
 
@@ -1685,6 +1744,7 @@
         if (msg.shortcut_mode) {
           document.getElementById('shortcut-mode-hint').style.display = 'block';
         }
+        initWebRTC(true);
       } else if (msg.type === 'folders') {
         const list = msg.folders || flattenTreeList(msg.tree || []);
         state.folderTree = list;
@@ -1703,6 +1763,18 @@
         document.getElementById('done-subtext').innerText = 'Saved to iPhone Files app';
       } else if (msg.type === 'text_message') {
         appendChatMessage('PEER', msg.text);
+      } else if (msg.type === 'webrtc_offer') {
+        initWebRTC(false);
+        await state.rtcPeerConnection.setRemoteDescription(msg.sdp);
+        const answer = await state.rtcPeerConnection.createAnswer();
+        await state.rtcPeerConnection.setLocalDescription(answer);
+        if (state.ws) state.ws.send(JSON.stringify({ type: 'webrtc_answer', sdp: state.rtcPeerConnection.localDescription }));
+      } else if (msg.type === 'webrtc_answer') {
+        if (state.rtcPeerConnection) await state.rtcPeerConnection.setRemoteDescription(msg.sdp);
+      } else if (msg.type === 'webrtc_ice') {
+        if (state.rtcPeerConnection && msg.candidate) {
+          try { await state.rtcPeerConnection.addIceCandidate(msg.candidate); } catch(e) {}
+        }
       } else if (msg.type === 'transfer_init') {
         if (state.currentTransfer) {
           state.incomingTransferQueue = state.incomingTransferQueue || [];
@@ -2523,7 +2595,11 @@
       sendQueue: [],
       receivedFiles: [],
       videoStream: null,
-      scanFrameId: null
+      scanFrameId: null,
+      receiveWatchdog: null,
+      sendWatchdog: null,
+      rtcPeerConnection: null,
+      rtcDataChannel: null
     };
 
     function initPhoneMode() {
@@ -2730,6 +2806,49 @@
       if (txt) txt.innerText = text;
     }
 
+    async function phoneInitWebRTC() {
+      if (phoneState.rtcPeerConnection) {
+        phoneState.rtcPeerConnection.close();
+      }
+      
+      const config = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      };
+      
+      const pc = new RTCPeerConnection(config);
+      phoneState.rtcPeerConnection = pc;
+      
+      pc.onicecandidate = (event) => {
+        if (event.candidate && phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+          phoneState.ws.send(JSON.stringify({ type: 'webrtc_ice', candidate: event.candidate }));
+        }
+      };
+      
+      pc.onconnectionstatechange = () => {
+        console.log('WebRTC state (Phone mode):', pc.connectionState);
+      };
+
+      const dc = pc.createDataChannel('fileTransfer', { negotiated: true, id: 0 });
+      dc.binaryType = 'arraybuffer';
+      dc.onopen = () => {
+        console.log('WebRTC DataChannel OPEN (Phone mode)');
+        phoneState.rtcDataChannel = dc;
+      };
+      dc.onclose = () => {
+        console.log('WebRTC DataChannel CLOSED (Phone mode)');
+        phoneState.rtcDataChannel = null;
+      };
+      dc.onmessage = async (event) => {
+        if (typeof event.data !== 'string') {
+          let buffer = event.data;
+          if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+          await phoneHandleIncomingBinaryChunk(buffer);
+        }
+      };
+    }
+
     function phoneHandleTextMessage(msg) {
       if (msg.type === 'paired') {
         phoneSetStatus(true, 'CONNECTED TO PC TERMINAL');
@@ -2739,6 +2858,18 @@
         }
       } else if (msg.type === 'text_message') {
         appendChatMessage('PEER', msg.text);
+      } else if (msg.type === 'webrtc_offer') {
+        phoneInitWebRTC();
+        await phoneState.rtcPeerConnection.setRemoteDescription(msg.sdp);
+        const answer = await phoneState.rtcPeerConnection.createAnswer();
+        await phoneState.rtcPeerConnection.setLocalDescription(answer);
+        if (phoneState.ws) phoneState.ws.send(JSON.stringify({ type: 'webrtc_answer', sdp: phoneState.rtcPeerConnection.localDescription }));
+      } else if (msg.type === 'webrtc_answer') {
+        if (phoneState.rtcPeerConnection) await phoneState.rtcPeerConnection.setRemoteDescription(msg.sdp);
+      } else if (msg.type === 'webrtc_ice') {
+        if (phoneState.rtcPeerConnection && msg.candidate) {
+          try { await phoneState.rtcPeerConnection.addIceCandidate(msg.candidate); } catch(e) {}
+        }
       } else if (msg.type === 'ack') {
         if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {
           phoneHandleAck(msg.chunk_index);

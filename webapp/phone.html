@@ -628,10 +628,15 @@
       cryptoKey: null,
       receiving: null,
       sending: null,
+      receiveWatchdog: null,
+      sendWatchdog: null,
       phoneSendQueue: [],
       scanner: null,
       completedFilesMap: {},
-      photoKeys: []
+      photoKeys: [],
+      galleryIndex: 0,
+      rtcPeerConnection: null,
+      rtcDataChannel: null
     };
 
     let currentPhoneGalleryIndex = 0;
@@ -772,6 +777,20 @@
       connectToSession(s);
     }
 
+    let isProcessingBinary = false;
+    const binaryQueue = [];
+    
+    async function processBinaryQueue() {
+      if (isProcessingBinary) return;
+      isProcessingBinary = true;
+      while (binaryQueue.length > 0) {
+        let buffer = binaryQueue.shift();
+        if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+        await handleBinaryMessage(buffer);
+      }
+      isProcessingBinary = false;
+    }
+
     async function connectToSession(sessionId) {
       try {
         state.sessionId = sessionId;
@@ -820,20 +839,6 @@
           document.getElementById('session-info-text').innerText = `SESSION ID: ${sessionId} — E2E ENCRYPTED`;
         };
 
-        let isProcessingBinary = false;
-        const binaryQueue = [];
-        
-        async function processBinaryQueue() {
-          if (isProcessingBinary) return;
-          isProcessingBinary = true;
-          while (binaryQueue.length > 0) {
-            let buffer = binaryQueue.shift();
-            if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
-            await handleBinaryMessage(buffer);
-          }
-          isProcessingBinary = false;
-        }
-
         ws.onmessage = (event) => {
           if (typeof event.data === 'string') {
             const msg = JSON.parse(event.data);
@@ -875,6 +880,48 @@
         setStatus(false, 'ERROR: ' + (e.message || 'Unknown'));
         alert('Connection failed: ' + (e.message || e));
       }
+    }
+
+    async function initWebRTC() {
+      if (state.rtcPeerConnection) {
+        state.rtcPeerConnection.close();
+      }
+      
+      const config = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      };
+      
+      const pc = new RTCPeerConnection(config);
+      state.rtcPeerConnection = pc;
+      
+      pc.onicecandidate = (event) => {
+        if (event.candidate && state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'webrtc_ice', candidate: event.candidate }));
+        }
+      };
+      
+      pc.onconnectionstatechange = () => {
+        console.log('WebRTC state:', pc.connectionState);
+      };
+
+      const dc = pc.createDataChannel('fileTransfer', { negotiated: true, id: 0 });
+      dc.binaryType = 'arraybuffer';
+      dc.onopen = () => {
+        console.log('WebRTC DataChannel OPEN');
+        state.rtcDataChannel = dc;
+      };
+      dc.onclose = () => {
+        console.log('WebRTC DataChannel CLOSED');
+        state.rtcDataChannel = null;
+      };
+      dc.onmessage = (event) => {
+        if (typeof event.data !== 'string') {
+          binaryQueue.push(event.data);
+          processBinaryQueue();
+        }
+      };
     }
 
     function setStatus(active, text) {
@@ -942,6 +989,18 @@
         }
       } else if (msg.type === 'text_message') {
         appendChatMessage('PEER', msg.text);
+      } else if (msg.type === 'webrtc_offer') {
+        initWebRTC();
+        await state.rtcPeerConnection.setRemoteDescription(msg.sdp);
+        const answer = await state.rtcPeerConnection.createAnswer();
+        await state.rtcPeerConnection.setLocalDescription(answer);
+        if (state.ws) state.ws.send(JSON.stringify({ type: 'webrtc_answer', sdp: state.rtcPeerConnection.localDescription }));
+      } else if (msg.type === 'webrtc_answer') {
+        if (state.rtcPeerConnection) await state.rtcPeerConnection.setRemoteDescription(msg.sdp);
+      } else if (msg.type === 'webrtc_ice') {
+        if (state.rtcPeerConnection && msg.candidate) {
+          try { await state.rtcPeerConnection.addIceCandidate(msg.candidate); } catch(e) {}
+        }
       } else if (msg.type === 'transfer_init') {
         if (state.receiving || state.sending) {
           state.incomingTransferQueue = state.incomingTransferQueue || [];
@@ -1415,7 +1474,12 @@
             const ab = await slice.arrayBuffer();
             const encrypted = await encryptChunk(ab, state.cryptoKey, chunkIndex);
             if (!state.sending || !state.ws || state.ws.readyState !== WebSocket.OPEN) break;
-            state.ws.send(encrypted);
+            
+            if (state.rtcDataChannel && state.rtcDataChannel.readyState === 'open') {
+              state.rtcDataChannel.send(encrypted);
+            } else {
+              state.ws.send(encrypted);
+            }
           } catch(err) {
             console.error('Chunk encrypt/send error:', err);
             break;
