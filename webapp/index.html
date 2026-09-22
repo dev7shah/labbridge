@@ -2104,10 +2104,12 @@
       state.expirySeconds = 240;
       updateTimerDisplay();
 
-      let idx = transfer.receivedChunks;
+      let idx = 0;
       try {
         const result = await decryptChunk(buffer, state.cryptoKey, transfer.receivedChunks);
-        idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : transfer.receivedChunks;
+        // After await, re-check transfer is still valid (could have been cancelled during decrypt)
+        if (state.currentTransfer !== transfer) return;
+        idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : 0;
         transfer.chunksData[idx] = new Blob([result.plaintext]);
         transfer.receivedChunks++;
 
@@ -2118,6 +2120,8 @@
           state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
         }
       } catch (err) {
+        // After await, check if transfer was already cancelled/replaced
+        if (state.currentTransfer !== transfer) return;
         console.error('Failed to decrypt incoming chunk:', err);
         state.currentTransfer = null;
         if (state.transferStallTimer) {
@@ -2165,9 +2169,9 @@
         }
       }, 15000);
 
-      if (transfer.receivedChunks >= transfer.total_chunks) {
-        const t = state.currentTransfer;
-        if (!t || t.direction !== 'receiving') return;
+      // Guard: only the handler that sees the exact completion count finalizes
+      if (transfer.receivedChunks === transfer.total_chunks && state.currentTransfer === transfer) {
+        const t = transfer;
 
         const validChunks = t.chunksData.filter(Boolean);
 
@@ -2762,7 +2766,8 @@
 
       try {
         const result = await decryptChunk(buffer, phoneState.cryptoKey, transfer.receivedChunks);
-        const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : transfer.receivedChunks;
+        if (phoneState.currentTransfer !== transfer) return;
+        const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : 0;
         transfer.chunksData[idx] = new Blob([result.plaintext]);
         transfer.receivedChunks++;
 
@@ -2773,7 +2778,7 @@
           phoneState.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
         }
 
-        if (transfer.receivedChunks >= transfer.total_chunks) {
+        if (transfer.receivedChunks === transfer.total_chunks && phoneState.currentTransfer === transfer) {
           const finalBlob = new Blob(transfer.chunksData, { type: transfer.mime_type });
           transfer.chunksData = null;
 
@@ -2810,6 +2815,7 @@
           document.getElementById('phone-done-subtext').innerText = transfer.filename;
         }
       } catch (err) {
+        if (phoneState.currentTransfer !== transfer) return;
         console.error('Failed to decrypt incoming chunk on phone:', err);
         phoneState.currentTransfer = null;
         if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {

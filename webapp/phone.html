@@ -1009,29 +1009,32 @@
     }
 
     async function handleBinaryMessage(data) {
-      if (!state.receiving) return;
+      const receiving = state.receiving;
+      if (!receiving) return;
       let buffer = data;
       if (buffer instanceof Blob) {
         buffer = await buffer.arrayBuffer();
       }
 
       try {
-        const result = await decryptChunk(buffer, state.cryptoKey, state.receiving.received);
-        const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : state.receiving.received;
-        state.receiving.chunks[idx] = result.plaintext;
-        state.receiving.received++;
+        const result = await decryptChunk(buffer, state.cryptoKey, receiving.received);
+        if (state.receiving !== receiving) return;
+        const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : 0;
+        receiving.chunks[idx] = result.plaintext;
+        receiving.received++;
 
-        const pct = Math.round((state.receiving.received / state.receiving.total_chunks) * 100);
+        const pct = Math.round((receiving.received / receiving.total_chunks) * 100);
         updateProgress(pct);
 
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
           state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
         }
 
-        if (state.receiving.received >= state.receiving.total_chunks) {
+        if (receiving.received === receiving.total_chunks && state.receiving === receiving) {
           finalizeReceivedFile();
         }
       } catch (err) {
+        if (state.receiving !== receiving) return;
         console.error('Decryption failed:', err);
         state.receiving = null;
         if (state.receiveWatchdog) {
