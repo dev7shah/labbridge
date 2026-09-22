@@ -1704,6 +1704,11 @@
       } else if (msg.type === 'text_message') {
         appendChatMessage('PEER', msg.text);
       } else if (msg.type === 'transfer_init') {
+        if (state.currentTransfer) {
+          state.incomingTransferQueue = state.incomingTransferQueue || [];
+          state.incomingTransferQueue.push(msg);
+          return;
+        }
         state.currentTransfer = {
           direction: 'receiving',
           filename: msg.filename || 'received_file',
@@ -2739,6 +2744,11 @@
           phoneHandleAck(msg.chunk_index);
         }
       } else if (msg.type === 'transfer_init') {
+        if (phoneState.currentTransfer) {
+          phoneState.incomingTransferQueue = phoneState.incomingTransferQueue || [];
+          phoneState.incomingTransferQueue.push(msg);
+          return;
+        }
         phoneState.currentTransfer = {
           direction: 'receiving',
           filename: msg.filename || 'received_file',
@@ -2810,9 +2820,16 @@
           }
 
           phoneState.currentTransfer = null;
-          phoneShowScreen('done');
-          document.getElementById('phone-done-message').innerText = 'RECEIVED FROM PC!';
-          document.getElementById('phone-done-subtext').innerText = transfer.filename;
+          if (phoneState.incomingTransferQueue && phoneState.incomingTransferQueue.length > 0) {
+            const nextMsg = phoneState.incomingTransferQueue.shift();
+            phoneHandleTextMessage(nextMsg);
+          } else if (phoneState.sendQueue && phoneState.sendQueue.length > 0) {
+            phoneProcessNextInQueue();
+          } else {
+            phoneShowScreen('done');
+            document.getElementById('phone-done-message').innerText = 'RECEIVED FROM PC!';
+            document.getElementById('phone-done-subtext').innerText = transfer.filename;
+          }
         }
       } catch (err) {
         if (phoneState.currentTransfer !== transfer) return;
