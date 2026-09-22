@@ -80,6 +80,7 @@ class TransferService extends ChangeNotifier {
 
   ConnectionStatus _status = ConnectionStatus.disconnected;
   bool _isDisconnecting = false;
+  final List<Map<String, dynamic>> _incomingTransferQueue = [];
   ConnectionStatus get currentStatus => _status;
 
   /// Connect to the Worker WebSocket
@@ -250,8 +251,8 @@ class TransferService extends ChangeNotifier {
 
   Future<void> _handleTransferInit(Map<String, dynamic> data) async {
     if (_tempSink != null || _tempFile != null) {
-      _errorController.add('A transfer is already in progress, cancelling previous.');
-      await _cancelCurrentReceive(notify: false);
+      _incomingTransferQueue.add(data);
+      return;
     }
 
     _currentFileName = data['filename'] as String? ?? 'unknown';
@@ -417,6 +418,11 @@ class TransferService extends ChangeNotifier {
       _completionController.add(fileName);
       _progressController.add(null);
       notifyListeners();
+
+      if (_incomingTransferQueue.isNotEmpty) {
+        final nextData = _incomingTransferQueue.removeAt(0);
+        _handleTransferInit(nextData);
+      }
     } catch (e) {
       _errorController.add('Failed to save file: $e');
       _progressController.add(null);
@@ -609,6 +615,7 @@ class TransferService extends ChangeNotifier {
     _isSending = false;
 
     _chunkBuffer.clear();
+    _incomingTransferQueue.clear();
     if (_tempSink != null || _tempFile != null) {
       try {
         await _tempSink?.flush();
@@ -650,6 +657,8 @@ class TransferService extends ChangeNotifier {
     }
     _readyCompleter = null;
     _ackCompleter = null;
+    _chunkBuffer.clear();
+    _incomingTransferQueue.clear();
     _tempSink?.close();
     _tempSink = null;
     _tempFile = null;
