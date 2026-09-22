@@ -1993,67 +1993,79 @@
 
     async function startSendingChunks() {
       if (!state.currentTransfer || state.currentTransfer.direction !== 'sending') return;
-      sendNextChunk(0);
+      state.currentTransfer.nextIndex = 0;
+      state.currentTransfer.sentChunks = 0; // Tracks ACKs received
+      state.currentTransfer.isProcessing = false;
+      streamNextSendingChunk();
     }
 
-    async function sendNextChunk(chunkIndex) {
+    async function streamNextSendingChunk() {
       const transfer = state.currentTransfer;
-      if (!transfer || chunkIndex >= transfer.total_chunks) {
-        state.currentTransfer = null;
-        if (state.sendQueue.length > 0) {
-          processNextInQueue();
-        } else {
-          setPhase('paired');
-          updateQueueDisplay();
-          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (LAST SENT: ${transfer ? transfer.filename : 'FILE'})`);
-        }
-        return;
-      }
+      if (!transfer || transfer.direction !== 'sending' || transfer.isProcessing) return;
+      transfer.isProcessing = true;
 
-      let arrayBuffer, encrypted;
       try {
-        const offset = chunkIndex * 512 * 1024;
-        const slice = transfer.file.slice(offset, offset + 512 * 1024);
-        arrayBuffer = await slice.arrayBuffer();
-        encrypted = await encryptChunk(arrayBuffer, state.cryptoKey, chunkIndex);
-      } catch (err) {
-        console.error("Failed to read or encrypt chunk:", err);
-        state.currentTransfer = null;
-        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-          state.ws.send(JSON.stringify({ type: 'cancelled' }));
-        }
-        if (state.sendQueue.length > 0) {
-          processNextInQueue();
-        } else {
-          setPhase('paired');
-          updateQueueDisplay();
-          setStatus(true, `CONNECTED: ${state.connectedDevice ? state.connectedDevice.toUpperCase() : ''} (ERROR READING FILE)`);
-        }
-        return;
-      }
+        // Send up to 16 chunks ahead of the last received ACK
+        while (state.currentTransfer === transfer && 
+               transfer.nextIndex < transfer.total_chunks && 
+               (transfer.nextIndex - transfer.sentChunks) < 16) {
+          
+          const chunkIndex = transfer.nextIndex;
+          transfer.nextIndex++;
+          
+          let arrayBuffer, encrypted;
+          try {
+            const offset = chunkIndex * 512 * 1024;
+            const slice = transfer.file.slice(offset, offset + 512 * 1024);
+            arrayBuffer = await slice.arrayBuffer();
+            encrypted = await encryptChunk(arrayBuffer, state.cryptoKey, chunkIndex);
+          } catch (err) {
+            console.error("Failed to read or encrypt chunk:", err);
+            state.currentTransfer = null;
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+              state.ws.send(JSON.stringify({ type: 'cancelled' }));
+            }
+            if (state.sendQueue.length > 0) {
+              processNextInQueue();
+            } else {
+              setPhase('paired');
+              updateQueueDisplay();
+              setStatus(true, `CONNECTED: ${state.connectedDevice ? state.connectedDevice.toUpperCase() : ''} (ERROR READING FILE)`);
+            }
+            return;
+          }
 
-      transfer.pendingAck = chunkIndex;
-      if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-        state.ws.send(encrypted);
-      }
-      
-      if (state.senderStallTimer) clearTimeout(state.senderStallTimer);
-      state.senderStallTimer = setTimeout(() => {
-        if (state.currentTransfer && state.currentTransfer.direction === 'sending') {
-          console.warn(`Sender stalled waiting for ACK on chunk ${chunkIndex}`);
-          state.currentTransfer = null;
           if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-            state.ws.send(JSON.stringify({ type: 'cancelled' }));
+            state.ws.send(encrypted);
           }
-          if (state.sendQueue.length > 0) {
-            processNextInQueue();
-          } else {
-            setPhase('paired');
-            updateQueueDisplay();
-            setStatus(true, `CONNECTED: ${state.connectedDevice ? state.connectedDevice.toUpperCase() : ''} (STALLED)`);
+          
+          if (state.senderStallTimer) clearTimeout(state.senderStallTimer);
+          state.senderStallTimer = setTimeout(() => {
+            if (state.currentTransfer && state.currentTransfer.direction === 'sending') {
+              console.warn(`Sender stalled waiting for ACK`);
+              state.currentTransfer = null;
+              if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({ type: 'cancelled' }));
+              }
+              if (state.sendQueue.length > 0) {
+                processNextInQueue();
+              } else {
+                setPhase('paired');
+                updateQueueDisplay();
+                setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (STALLED — RETRY)`);
+              }
+            }
+          }, 15000);
+        }
+      } finally {
+        if (state.currentTransfer === transfer) {
+          transfer.isProcessing = false;
+          // If window opened up while processing, continue
+          if ((transfer.nextIndex - transfer.sentChunks) < 16 && transfer.nextIndex < transfer.total_chunks) {
+            streamNextSendingChunk();
           }
         }
-      }, 15000);
+      }
     }
 
     function handleAck(chunkIndex) {
@@ -2063,15 +2075,26 @@
       }
       const transfer = state.currentTransfer;
       if (!transfer || transfer.direction !== 'sending') return;
-      
+
       state.expirySeconds = 240;
       updateTimerDisplay();
 
-      transfer.sentChunks++;
+      transfer.sentChunks++; // Tracks ACKs received
       const pct = Math.min(100, Math.round((transfer.sentChunks / transfer.total_chunks) * 100));
       updateProgressDisplay(transfer.filename, transfer.size, pct);
 
-      sendNextChunk(chunkIndex + 1);
+      if (transfer.sentChunks >= transfer.total_chunks) {
+        state.currentTransfer = null;
+        if (state.sendQueue.length > 0) {
+          processNextInQueue();
+        } else {
+          setPhase('paired');
+          updateQueueDisplay();
+          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (LAST SENT: ${transfer.filename})`);
+        }
+      } else {
+        streamNextSendingChunk();
+      }
     }
 
     async function handleIncomingBinaryChunk(buffer) {

@@ -1377,6 +1377,9 @@
       } else {
         document.getElementById('transfer-title').innerText = 'SENDING TO PC...';
       }
+      state.sending.acked = 0;
+      state.sending.nextIndex = 0;
+      state.sending.isProcessing = false;
       document.getElementById('transfer-filename').innerText = file.name;
       updateProgress(0);
 
@@ -1391,31 +1394,43 @@
       }
     }
 
-    function streamNextSendingChunk() {
-      if (!state.sending) return;
-      if (state.sending.nextIndex >= state.sending.total_chunks) {
-        // All chunks sent — wait for remaining acks, don't send more
-        return;
-      }
-      if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
-        console.warn('WS not open, pausing send');
-        return;
-      }
-      const chunkIndex = state.sending.nextIndex;
-      state.sending.nextIndex++;
+    async function streamNextSendingChunk() {
+      const sending = state.sending;
+      if (!sending || sending.isProcessing) return;
+      sending.isProcessing = true;
 
-      const CHUNK_SIZE = 512 * 1024;
-      const offset = chunkIndex * CHUNK_SIZE;
-      const slice = state.sending.file.slice(offset, offset + CHUNK_SIZE);
+      try {
+        while (state.sending === sending && 
+               sending.nextIndex < sending.total_chunks && 
+               (sending.nextIndex - sending.acked) < 16) {
+          
+          if (!state.ws || state.ws.readyState !== WebSocket.OPEN) break;
+          
+          const chunkIndex = sending.nextIndex;
+          sending.nextIndex++;
 
-      slice.arrayBuffer().then(ab => {
-        return encryptChunk(ab, state.cryptoKey, chunkIndex);
-      }).then(encrypted => {
-        if (!state.sending || !state.ws || state.ws.readyState !== WebSocket.OPEN) return;
-        state.ws.send(encrypted);
-      }).catch(err => {
-        console.error('Chunk encrypt/send error:', err);
-      });
+          const CHUNK_SIZE = 512 * 1024;
+          const offset = chunkIndex * CHUNK_SIZE;
+          const slice = sending.file.slice(offset, offset + CHUNK_SIZE);
+
+          try {
+            const ab = await slice.arrayBuffer();
+            const encrypted = await encryptChunk(ab, state.cryptoKey, chunkIndex);
+            if (!state.sending || !state.ws || state.ws.readyState !== WebSocket.OPEN) break;
+            state.ws.send(encrypted);
+          } catch(err) {
+            console.error('Chunk encrypt/send error:', err);
+            break;
+          }
+        }
+      } finally {
+        if (state.sending === sending) {
+          sending.isProcessing = false;
+          if ((sending.nextIndex - sending.acked) < 16 && sending.nextIndex < sending.total_chunks) {
+            streamNextSendingChunk();
+          }
+        }
+      }
     }
 
     // Watchdog: if sending stalls for >10 seconds, reset and show error

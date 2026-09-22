@@ -74,6 +74,7 @@ class TransferService extends ChangeNotifier {
 
   // State for sending
   bool _isSending = false;
+  int _ackedChunks = 0;
   bool _isConnecting = false;
   Completer<void>? _readyCompleter;
   Completer<int>? _ackCompleter;
@@ -160,9 +161,8 @@ class TransferService extends ChangeNotifier {
           }
           break;
         case 'ack':
-          if (_ackCompleter != null && !_ackCompleter!.isCompleted) {
-            final idx = data['chunk_index'] as int? ?? 0;
-            _ackCompleter!.complete(idx);
+          if (_isSending) {
+            _ackedChunks++;
           }
           break;
         case 'paired':
@@ -178,6 +178,7 @@ class TransferService extends ChangeNotifier {
           disconnect(sendSignal: false);
           break;
         case 'peer_disconnected':
+          _isSending = false;
           _errorController.add('PC disconnected. Waiting for reconnect...');
           _status = ConnectionStatus.reconnecting;
           _connectionStatusController.add(ConnectionStatus.reconnecting);
@@ -190,6 +191,7 @@ class TransferService extends ChangeNotifier {
           }
           break;
         case 'cancelled':
+          _isSending = false;
           if (_ackCompleter != null && !_ackCompleter!.isCompleted) {
             _ackCompleter!.completeError(StateError('cancelled'));
           }
@@ -199,6 +201,7 @@ class TransferService extends ChangeNotifier {
           _cancelCurrentReceive(notify: true);
           break;
         case 'error':
+          _isSending = false;
           _errorController.add(data['message'] as String? ?? 'Unknown error');
           if (_readyCompleter != null && !_readyCompleter!.isCompleted) _readyCompleter!.completeError(StateError(data['message'] as String? ?? 'Unknown error'));
           if (_ackCompleter != null && !_ackCompleter!.isCompleted) _ackCompleter!.completeError(StateError(data['message'] as String? ?? 'Unknown error'));
