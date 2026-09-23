@@ -1,1 +1,1733 @@
-export const PHONE_HTML = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\" />\n  <title>DocTransit — Phone PWA</title>\n  <meta property=\"og:title\" content=\"DocTransit\">\n  <meta property=\"og:description\" content=\"Zero-cloud P2P encrypted file transfer for your local network and beyond.\">\n  <meta property=\"og:image\" content=\"https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg\">\n  <meta property=\"og:url\" content=\"https://doctransit.in/\">\n  <meta name=\"twitter:card\" content=\"summary_large_image\">\n  <link rel=\"manifest\" href=\"manifest.json\" />\n  <link rel=\"icon\" type=\"image/png\" href=\"/icon.png\" />\n  <script src=\"/fflate.min.js\"></script>\n  <meta name=\"theme-color\" content=\"#000000\" />\n  <meta name=\"apple-mobile-web-app-capable\" content=\"yes\" />\n  <meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\" />\n  <meta name=\"apple-mobile-web-app-title\" content=\"DocTransit\" />\n  <script src=\"/html5-qrcode.min.js\"></script>\n  <style>\n    :root {\n      --bg:           #000000;\n      --surface:      #09090B;\n      --surface-2:    #121214;\n      --border:       #27272A;\n      --border-hover: #FFFFFF;\n      --text:         #FFFFFF;\n      --text-2:       #A1A1AA;\n      --text-3:       #52525B;\n      --mono:         'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;\n    }\n\n    * {\n      box-sizing: border-box;\n      margin: 0;\n      padding: 0;\n      -webkit-tap-highlight-color: transparent;\n    }\n\n    body {\n      background: var(--bg);\n      color: var(--text);\n      font-family: var(--mono);\n      min-height: 100vh;\n      display: flex;\n      flex-direction: column;\n      padding: 20px 24px;\n      margin: 0;\n    }\n\n    /* Chat Modal & Mobile Optimization */\n    #chat-modal {\n      display: none;\n      position: fixed;\n      inset: 0;\n      background: #000000;\n      z-index: 99999;\n      align-items: center;\n      justify-content: center;\n      padding: 0;\n    }\n    .chat-modal-box {\n      background: #000000;\n      width: 100%;\n      height: 100%;\n      max-height: 100dvh;\n      display: flex;\n      flex-direction: column;\n    }\n    .chat-modal-header {\n      padding: 12px 16px;\n      padding-top: max(12px, env(safe-area-inset-top));\n      border-bottom: 1px solid var(--border);\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      background: var(--surface-2);\n      gap: 12px;\n      flex-shrink: 0;\n    }\n    .chat-modal-messages {\n      flex: 1;\n      padding: 12px 16px;\n      overflow-y: auto;\n      display: flex;\n      flex-direction: column;\n      gap: 6px;\n      background: #000000;\n      -webkit-overflow-scrolling: touch;\n    }\n    .chat-modal-footer {\n      padding: 10px 12px;\n      padding-bottom: max(10px, env(safe-area-inset-bottom));\n      border-top: 1px solid var(--border);\n      background: var(--surface-2);\n      display: flex;\n      gap: 8px;\n      align-items: flex-end;\n      width: 100%;\n      box-sizing: border-box;\n      flex-shrink: 0;\n    }\n    .chat-modal-footer textarea {\n      flex: 1;\n      min-width: 0;\n      height: 38px;\n      min-height: 38px;\n      max-height: 100px;\n      background: var(--surface);\n      border: 1px solid var(--border);\n      border-radius: 0;\n      padding: 8px 10px;\n      color: #FFFFFF;\n      font-family: var(--mono);\n      font-size: 13px;\n      outline: none;\n      resize: none;\n      line-height: 1.4;\n      box-sizing: border-box;\n    }\n    .chat-modal-footer textarea:focus {\n      border-color: #FFFFFF;\n    }\n    .chat-modal-footer button {\n      flex-shrink: 0;\n      background: #FFFFFF;\n      color: #000000;\n      border: 1px solid var(--border);\n      border-radius: 0;\n      font-family: var(--mono);\n      font-size: 11px;\n      font-weight: 800;\n      padding: 0 12px;\n      height: 38px;\n      cursor: pointer;\n      text-transform: uppercase;\n    }\n    .chat-modal-footer button:active { opacity: 0.7; }\n\n    header {\n      display: flex;\n      align-items: center;\n      justify-content: space-between;\n      padding-bottom: 20px;\n      border-bottom: 1px solid var(--border);\n      margin-bottom: 24px;\n    }\n\n    .brand {\n      display: flex;\n      align-items: center;\n      gap: 14px;\n    }\n\n    .brand img {\n      width: 36px;\n      height: 36px;\n      border-radius: 0;\n      border: 1px solid var(--border);\n    }\n\n    .brand-name {\n      font-family: var(--mono);\n      font-size: 20px;\n      font-weight: 800;\n      color: var(--text);\n      letter-spacing: -0.3px;\n    }\n\n    .status-pill {\n      display: inline-flex;\n      align-items: center;\n      gap: 10px;\n      padding: 8px 14px;\n      border-radius: 0;\n      font-size: 13px;\n      font-weight: 700;\n      background: var(--surface);\n      border: 1px solid var(--border);\n      font-family: var(--mono);\n      color: var(--text-2);\n    }\n\n    .status-dot {\n      width: 8px;\n      height: 8px;\n      border-radius: 0;\n      background: var(--text-3);\n      flex-shrink: 0;\n    }\n\n    .status-dot.active {\n      background: #FFFFFF;\n      box-shadow: 0 0 8px #FFFFFF;\n    }\n\n    .card {\n      background: var(--surface);\n      border: 1px solid var(--border);\n      border-radius: 0;\n      padding: 20px;\n      margin-bottom: 14px;\n      width: 100%;\n    }\n\n    h2 {\n      font-family: var(--mono);\n      font-size: 14px;\n      font-weight: 800;\n      color: var(--text);\n      letter-spacing: -0.3px;\n      margin-bottom: 8px;\n      text-transform: uppercase;\n    }\n\n    p {\n      font-size: 12px;\n      color: var(--text-2);\n      line-height: 1.5;\n      font-family: var(--mono);\n    }\n\n    .input-group {\n      display: flex;\n      gap: 10px;\n      margin-top: 16px;\n    }\n\n    input[type=\"text\"] {\n      width: 100%;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      border-radius: 0;\n      padding: 12px 14px;\n      color: var(--text);\n      font-family: var(--mono);\n      font-size: 13px;\n      outline: none;\n      transition: border-color 0.15s;\n    }\n\n    input[type=\"text\"]:focus {\n      border-color: #FFFFFF;\n    }\n\n    button {\n      width: 100%;\n      background: #FFFFFF;\n      color: #000000;\n      border: 1px solid var(--border);\n      border-radius: 0;\n      padding: 14px;\n      font-family: var(--mono);\n      font-size: 12px;\n      font-weight: 800;\n      cursor: pointer;\n      letter-spacing: 0.5px;\n      transition: opacity 0.15s;\n      min-height: 44px;\n      text-transform: uppercase;\n    }\n\n    button:active { opacity: 0.8; }\n\n    button.secondary {\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      color: var(--text);\n    }\n\n    #url-warning-banner {\n      font-family: var(--mono);\n      color: #FFFFFF;\n      font-size: 11px;\n      margin-top: 12px;\n      padding: 10px;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      border-radius: 0;\n      font-weight: 700;\n    }\n\n    #dropzone-phone {\n      border: 1px dashed var(--border);\n      border-radius: 0;\n      padding: 36px 16px;\n      text-align: center;\n      position: relative;\n      margin-top: 14px;\n      background: var(--surface-2);\n      transition: all 0.2s;\n    }\n\n    #dropzone-phone:active {\n      border-color: #FFFFFF;\n      background: var(--surface);\n    }\n\n    #dropzone-phone input[type=\"file\"] {\n      position: absolute;\n      inset: 0;\n      opacity: 0;\n      cursor: pointer;\n      width: 100%;\n      height: 100%;\n    }\n\n    .progress-track {\n      width: 100%;\n      height: 2px;\n      background: var(--surface-2);\n      border-radius: 0;\n      overflow: hidden;\n      margin: 14px 0;\n      border: 1px solid var(--border);\n    }\n\n    .progress-bar {\n      height: 100%;\n      background: #FFFFFF;\n      width: 0%;\n      transition: width 0.1s linear;\n    }\n\n    .file-item {\n      display: flex;\n      align-items: center;\n      gap: 12px;\n      padding: 14px;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      border-radius: 0;\n      margin-top: 10px;\n    }\n\n    .file-icon {\n      width: 36px;\n      height: 36px;\n      border-radius: 0;\n      background: var(--surface);\n      border: 1px solid var(--border);\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      font-family: var(--mono);\n      font-size: 13px;\n      color: var(--text);\n      flex-shrink: 0;\n      font-weight: 800;\n    }\n\n    .file-name {\n      font-family: var(--mono);\n      font-size: 13px;\n      font-weight: 700;\n      color: var(--text);\n      white-space: nowrap;\n      overflow: hidden;\n      text-overflow: ellipsis;\n    }\n\n    .file-size {\n      font-family: var(--mono);\n      font-size: 11px;\n      color: var(--text-2);\n      margin-top: 2px;\n    }\n\n    .qr-scanner-box {\n      margin-top: 16px;\n      border-radius: 0;\n      overflow: hidden;\n      display: none;\n      background: #000;\n      border: 1px solid var(--border);\n    }\n\n    /* Lightbox Modal */\n    #phone-lightbox {\n      display: none;\n      position: fixed;\n      inset: 0;\n      background: rgba(0, 0, 0, 0.95);\n      z-index: 1000;\n      flex-direction: column;\n      justify-content: space-between;\n      padding: 20px;\n      border: 1px solid var(--border);\n    }\n\n    .lightbox-header {\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      border-bottom: 1px solid var(--border);\n      padding-bottom: 14px;\n    }\n\n    .lightbox-nav {\n      display: flex;\n      align-items: center;\n      justify-content: space-between;\n      gap: 12px;\n      margin-top: 12px;\n    }\n\n    .thumb-strip {\n      display: flex;\n      gap: 8px;\n      overflow-x: auto;\n      padding: 10px 0;\n      border-top: 1px solid var(--border);\n    }\n\n    .thumb-item {\n      width: 48px;\n      height: 48px;\n      border: 1px solid var(--border);\n      background: var(--surface);\n      cursor: pointer;\n      object-fit: cover;\n      flex-shrink: 0;\n    }\n\n    .thumb-item.active {\n      border: 2px solid #FFFFFF;\n    }\n\n    footer {\n      margin-top: auto;\n      padding-top: 24px;\n      text-align: center;\n    }\n\n    .made-by-badge {\n      display: inline-flex;\n      align-items: center;\n      gap: 8px;\n      padding: 8px 14px;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      color: var(--text);\n      font-family: var(--mono);\n      font-size: 13px;\n      font-weight: 800;\n      text-decoration: none;\n      transition: border-color 0.15s;\n    }\n\n    .made-by-badge:hover {\n      border-color: #FFFFFF;\n    }\n  </style>\n</head>\n<body>\n  <header>\n    <div class=\"brand\">\n      <img src=\"logo.png\" alt=\"DocTransit Logo\" />\n      <div>\n        <div class=\"brand-name\">DOCTRANSIT</div>\n      </div>\n    </div>\n    <div style=\"display: flex; align-items: center; gap: 12px; flex-wrap: wrap;\">\n      <div class=\"status-pill\">\n        <span id=\"status-dot\" class=\"status-dot\"></span>\n        <span id=\"status-text\">DISCONNECTED</span>\n      </div>\n    </div>\n  </header>\n\n  <!-- Permanent Android APK Button -->\n  <a id=\"android-apk-btn\" href=\"doctransit-app.apk\" download=\"doctransit-app.apk\" style=\"display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;\">\n    [ DOWNLOAD NATIVE ANDROID APK ]\n  </a>\n\n  <!-- Section 1: Connect / Pairing -->\n  <div id=\"section-connect\" class=\"card\">\n    <div style=\"background: var(--surface-2); border: 1px solid var(--border); padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;\">\n      <div style=\"display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;\">\n        <span style=\"font-size: 11px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;\">[ WHAT IS DOCTRANSIT? ]</span>\n        <a href=\"install.html\" style=\"background: #FFFFFF; color: #000000; padding: 4px 10px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;\">[ GET APK ]</a>\n      </div>\n      <p style=\"font-size: 12px; color: var(--text-2); line-height: 1.4; font-family: var(--mono);\">\n        DocTransit streams files peer-to-peer between your mobile device and PC terminal with 256-bit E2E encryption. Zero cloud storage or login required.\n      </p>\n    </div>\n\n    <h2>CONNECT TO PC SESSION</h2>\n    <p>Scan the QR code displayed on your PC terminal or input the 12-character session identifier.</p>\n    \n    <div id=\"url-warning-banner\" style=\"display:none;\">[ ! ] UPDATE SERVER WORKER URL IN SETTINGS</div>\n\n    <div style=\"margin-top: 16px;\">\n      <label style=\"font-size: 11px; font-weight: 700; color: var(--text-2); display: block; margin-bottom: 6px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px;\">SERVER URL (WORKER):</label>\n      <input type=\"text\" id=\"worker-url-input\" placeholder=\"e.g. http://192.168.1.5:8787\" />\n    </div>\n\n    <div class=\"input-group\">\n      <input type=\"text\" id=\"session-input\" placeholder=\"e.g. a1b2c3d4e5f6\" maxlength=\"12\" />\n    </div>\n    <div style=\"margin-top: 12px;\">\n      <button onclick=\"connectManual()\">[ CONNECT TO SESSION ]</button>\n    </div>\n\n    <div style=\"margin-top: 12px; text-align: center;\">\n      <button class=\"secondary\" onclick=\"toggleScanner()\">[ SCAN PC QR CODE ]</button>\n    </div>\n\n    <div id=\"qr-reader\" class=\"qr-scanner-box\"></div>\n  </div>\n\n  <!-- Section 2: Connected Dashboard -->\n  <div id=\"section-dashboard\" style=\"display: none;\">\n    <div id=\"card-connected\" class=\"card\">\n      <div style=\"display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;\">\n        <h2 style=\"margin: 0;\">CONNECTED TO PC SESSION</h2>\n        <button onclick=\"disconnectPhoneSession()\" style=\"background: transparent; border: 1px solid #EF4444; color: #EF4444; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase;\">[ DISCONNECT ]</button>\n      </div>\n      <p id=\"session-info-text\">Ready to transfer high-speed encrypted files over WebSockets.</p>\n      \n      <div id=\"dropzone-phone\">\n        <input type=\"file\" id=\"phone-file-input\" multiple onchange=\"handlePhoneFilesSelected(event)\" />\n        <div style=\"font-family: var(--mono); font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 8px;\">[ + ] TAP TO SEND FILES TO PC</div>\n        <div style=\"font-size: 11px; color: var(--text-2);\">PHOTOS · DOCUMENTS · ARCHIVES</div>\n      </div>\n\n      <div style=\"margin-top: 14px;\">\n        <button id=\"btn-phone-chat\" onclick=\"openChatModal()\" style=\"width: 100%; background: var(--surface-2); border: 1px solid var(--border); padding: 14px; color: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase;\">\n          <span>[ OPEN MESSAGE WINDOW ]</span>\n          <span id=\"phone-chat-badge\" style=\"display:none; background: #FFFFFF; color: #000000; padding: 2px 8px; font-size: 11px; font-weight: 800;\">0 NEW</span>\n        </button>\n      </div>\n    </div>\n\n    <!-- Active Transfer -->\n    <div id=\"section-transferring\" class=\"card\" style=\"display: none;\">\n      <h2 id=\"transfer-title\">RECEIVING FILE...</h2>\n      <div class=\"file-item\">\n        <div class=\"file-icon\">[ ↓ ]</div>\n        <div style=\"flex: 1; overflow: hidden;\">\n          <div id=\"transfer-filename\" class=\"file-name\">file.pdf</div>\n          <div id=\"transfer-pct\" class=\"file-size\">0%</div>\n        </div>\n      </div>\n      <progress id=\"transfer-progress\" value=\"0\" max=\"100\" style=\"display:none;\"></progress>\n      <div class=\"progress-track\">\n        <div id=\"transfer-bar\" class=\"progress-bar\"></div>\n      </div>\n      <button class=\"secondary\" style=\"color: #EF4444; border-color: #27272A; margin-top: 12px;\" onclick=\"cancelTransfer()\">[ CANCEL TRANSFER ]</button>\n    </div>\n\n    <!-- Completed Files & Multi-Photo Preview Gallery -->\n    <div id=\"section-completed\" class=\"card\" style=\"display: none;\">\n      <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;\">\n        <h2>RECEIVED FILES</h2>\n        <button id=\"phone-gallery-btn\" style=\"width: auto; padding: 6px 12px; font-size: 11px; min-height: 32px; display: none;\" onclick=\"openPhoneGallery(0)\">[ PREVIEW ALL PHOTOS ]</button>\n      </div>\n      <p>Select any item below to open, save to iPhone Files app, share, or preview.</p>\n      <div id=\"completed-files-list\"></div>\n    </div>\n  </div>\n\n  <!-- Phone Multi-Photo Lightbox -->\n  <div id=\"phone-lightbox\">\n    <div class=\"lightbox-header\">\n      <div>\n        <div id=\"phone-lightbox-title\" style=\"font-size: 13px; font-weight: 800; color: #FFFFFF;\">filename.jpg</div>\n        <div id=\"phone-lightbox-counter\" style=\"font-size: 11px; color: var(--text-2); margin-top: 2px;\">1 / 1</div>\n      </div>\n      <button style=\"width: auto; min-height: 34px; padding: 6px 14px; background: var(--surface); color: #FFFFFF; border: 1px solid var(--border);\" onclick=\"closePhoneGallery()\">[ CLOSE ]</button>\n    </div>\n\n    <div style=\"flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 16px 0;\">\n      <img id=\"phone-lightbox-img\" src=\"\" style=\"max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid var(--border);\" />\n    </div>\n\n    <div class=\"lightbox-nav\" style=\"display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;\">\n      <button style=\"flex: 1; min-height: 40px; background: var(--surface);\" onclick=\"changePhoneGallery(-1)\">[ PREV ]</button>\n      <button id=\"phone-lightbox-save\" style=\"flex: 1.5; min-height: 40px; background: #FFFFFF; color: #000000;\" onclick=\"saveCurrentPhonePhoto()\">[ SAVE ]</button>\n      <button style=\"flex: 1; min-height: 40px; background: transparent; color: #EF4444; border: 1px solid #EF4444;\" onclick=\"deleteCurrentPhonePhoto()\">[ DELETE ]</button>\n      <button style=\"flex: 1; min-height: 40px; background: var(--surface);\" onclick=\"changePhoneGallery(1)\">[ NEXT ]</button>\n    </div>\n    <div style=\"display: flex; gap: 8px;\">\n      <button id=\"phone-lightbox-save-all\" style=\"flex: 1; min-height: 40px; background: transparent; color: #FFFFFF; border: 1px solid var(--border);\" onclick=\"saveAllPhonePhotos()\">[ SAVE ALL AS ZIP ]</button>\n    </div>\n\n    <div id=\"phone-thumb-strip\" class=\"thumb-strip\"></div>\n  </div>\n\n  <!-- Pop-Open Messages Modal -->\n  <div id=\"chat-modal\">\n    <div class=\"chat-modal-box\">\n      <div class=\"chat-modal-header\">\n        <div style=\"font-family: var(--mono); font-size: 13px; font-weight: 800; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;\">[ MESSAGES / CHAT ]</div>\n        <button onclick=\"closeChatModal()\" style=\"background: transparent; border: 1px solid var(--border); color: var(--text-2); padding: 4px 10px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; font-family: var(--mono);\">[ X ]</button>\n      </div>\n      <div id=\"chat-modal-messages\" class=\"chat-modal-messages\">\n        <div id=\"chat-empty-state\" style=\"margin: auto; color: var(--text-3); font-family: var(--mono); font-size: 12px; text-align: center;\">No messages in this session yet.</div>\n      </div>\n      <div class=\"chat-modal-footer\">\n        <textarea id=\"chat-modal-input\" placeholder=\"Type a message...\" onkeydown=\"if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendModalChatMessage();}\"></textarea>\n        <button onclick=\"sendModalChatMessage()\">SEND</button>\n      </div>\n    </div>\n  </div>\n\n  <footer>\n    <a href=\"https://github.com/dev7shah\" target=\"_blank\" class=\"made-by-badge\">MADE BY DEV7SHAH</a>\n  </footer>\n\n  <script>\n    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {\n      const origGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);\n      navigator.mediaDevices.getUserMedia = function(constraints) {\n        if (constraints && typeof constraints === 'object') {\n          constraints.audio = false;\n        }\n        return origGetUserMedia(constraints);\n      };\n    }\n\n\n    const state = {\n      chatModalOpen: false,\n      ws: null,\n      sessionId: null,\n      workerHttpUrl: null,\n      cryptoKey: null,\n      receiving: null,\n      sending: null,\n      phoneSendQueue: [],\n      scanner: null,\n      completedFilesMap: {},\n      photoKeys: []\n    };\n\n    let currentPhoneGalleryIndex = 0;\n\n    function initApp() {\n      try {\n        if (/android/i.test(navigator.userAgent)) {\n          const btn = document.getElementById('android-apk-btn');\n          if (btn) btn.style.display = 'block';\n        }\n\n        const params = new URLSearchParams(window.location.search);\n        let s = params.get('s');\n        const pathMatch = window.location.pathname.match(/\\/session\\/([a-zA-Z0-9]{12})\\/phone/);\n        if (!s && pathMatch) {\n          s = pathMatch[1];\n        }\n        // Also try hash fragment as fallback\n        if (!s && window.location.hash) {\n          try {\n            const hashParams = new URLSearchParams(window.location.hash.substring(1));\n            s = hashParams.get('s');\n          } catch(e){}\n        }\n        const w = params.get('w');\n        \n        let savedUrl = null;\n        try { savedUrl = localStorage.getItem('doctransit_worker_url'); } catch(e){}\n        \n        if (w) {\n          state.workerHttpUrl = w;\n        } else if (savedUrl && !savedUrl.includes('YOUR_SUBDOMAIN')) {\n          state.workerHttpUrl = savedUrl;\n        } else {\n          const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\\.168\\.|^10\\.|^172\\.(1[6-9]|2[0-9]|3[0-1])\\./.test(window.location.hostname);\n          state.workerHttpUrl = isFileOrLocal ? 'https://doctransit.in' : window.location.origin;\n        }\n\n        // Fallback: if workerHttpUrl is still empty, hardcode it\n        if (!state.workerHttpUrl) {\n          state.workerHttpUrl = 'https://doctransit.in';\n        }\n\n        const urlInput = document.getElementById('worker-url-input');\n        if (urlInput) urlInput.value = state.workerHttpUrl;\n\n        const warningBanner = document.getElementById('url-warning-banner');\n        const isLocalhostUrl = state.workerHttpUrl.includes('localhost') || state.workerHttpUrl.includes('127.0.0.1');\n        const isPlaceholder = state.workerHttpUrl.includes('YOUR_SUBDOMAIN');\n        const isPhoneBrowser = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');\n\n        if ((isLocalhostUrl || isPlaceholder) && isPhoneBrowser && warningBanner) {\n          warningBanner.style.display = 'block';\n          warningBanner.innerHTML = '[ ! ] UPDATE SERVER WORKER URL IN SETTINGS';\n        }\n\n        if (s && s.length === 12) {\n          document.getElementById('session-input').value = s;\n          connectToSession(s);\n        }\n\n\n      } catch (err) {\n        // Show error visibly on the page\n        const banner = document.getElementById('url-warning-banner');\n        if (banner) {\n          banner.style.display = 'block';\n          banner.style.color = '#EF4444';\n          banner.innerHTML = '[ ERROR ] Init failed: ' + (err.message || err) + '<br>URL: ' + window.location.href;\n        }\n\n        console.error('[DocTransit] initApp error:', err);\n      }\n    }\n\n    // Use multiple methods to ensure init runs\n    if (document.readyState === 'loading') {\n      document.addEventListener('DOMContentLoaded', initApp);\n    } else {\n      // DOM already loaded (e.g. script at end of body)\n      initApp();\n    }\n\n    async function deriveAESKey(sessionId) {\n      const enc = new TextEncoder();\n      const baseKey = await crypto.subtle.importKey(\n        'raw', enc.encode(sessionId), { name: 'HKDF' }, false, ['deriveKey']\n      );\n      return await crypto.subtle.deriveKey(\n        {\n          name: 'HKDF',\n          hash: 'SHA-256',\n          salt: enc.encode('doctransit-v2'),\n          info: enc.encode('file-transfer')\n        },\n        baseKey,\n        { name: 'AES-GCM', length: 256 },\n        false,\n        ['encrypt', 'decrypt']\n      );\n    }\n\n    async function decryptChunk(buffer, key, chunkIndex) {\n      const combined = new Uint8Array(buffer);\n      if (combined.byteLength < 12) throw new Error(\"Chunk too small for IV\");\n      const iv = combined.slice(0, 12);\n      const view = new DataView(iv.buffer, iv.byteOffset, iv.byteLength);\n      const extractedIndex = view.getUint32(8, false);\n      const ciphertext = combined.slice(12);\n      const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);\n      return { chunkIndex: extractedIndex, plaintext };\n    }\n\n    async function encryptChunk(plaintextBuffer, key, chunkIndex) {\n      const iv = new Uint8Array(12);\n      crypto.getRandomValues(iv);\n      const view = new DataView(iv.buffer);\n      view.setUint32(8, chunkIndex, false);\n\n      const ciphertext = await crypto.subtle.encrypt(\n        { name: 'AES-GCM', iv },\n        key,\n        plaintextBuffer\n      );\n\n      const combined = new Uint8Array(12 + ciphertext.byteLength);\n      combined.set(iv, 0);\n      combined.set(new Uint8Array(ciphertext), 12);\n      return combined.buffer;\n    }\n\n    async function connectManual() {\n      const s = document.getElementById('session-input').value.trim();\n      if (!s || s.length !== 12) {\n        alert('Please enter a valid 12-character session ID');\n        return;\n      }\n      connectToSession(s);\n    }\n\n    async function connectToSession(sessionId) {\n      try {\n        state.sessionId = sessionId;\n        const urlInput = document.getElementById('worker-url-input');\n        if (urlInput && urlInput.value.trim()) {\n          state.workerHttpUrl = urlInput.value.trim();\n          localStorage.setItem('doctransit_worker_url', state.workerHttpUrl);\n        }\n\n        if (state.scanner) {\n          try { await state.scanner.stop(); } catch(e){}\n          document.getElementById('qr-reader').style.display = 'none';\n        }\n\n        setStatus(false, 'CONNECTING...');\n\n        // Check crypto.subtle availability (requires HTTPS)\n        if (!window.crypto || !window.crypto.subtle) {\n          setStatus(false, 'HTTPS REQUIRED');\n          alert('Secure context (HTTPS) is required for encryption. Current URL: ' + window.location.href);\n          return;\n        }\n\n        try {\n          state.cryptoKey = await deriveAESKey(sessionId);\n        } catch (cryptoErr) {\n          setStatus(false, 'CRYPTO ERROR');\n          alert('Failed to derive encryption key: ' + (cryptoErr.message || cryptoErr));\n          return;\n        }\n\n        const wsUrl = state.workerHttpUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');\n        const socketUrl = `${wsUrl}/session/${sessionId}/phone`;\n        console.log('[DocTransit] Connecting to:', socketUrl);\n\n        const ws = new WebSocket(socketUrl);\n        ws.binaryType = 'arraybuffer';\n        let opened = false;\n\n        ws.onopen = () => {\n          opened = true;\n          state.ws = ws;\n          setStatus(true, 'CONNECTED');\n          document.getElementById('section-connect').style.display = 'none';\n          document.getElementById('section-dashboard').style.display = 'block';\n          document.getElementById('session-info-text').innerText = `SESSION ID: ${sessionId} — E2E ENCRYPTED`;\n        };\n\n        let isProcessingBinary = false;\n        const binaryQueue = [];\n        \n        async function processBinaryQueue() {\n          if (isProcessingBinary) return;\n          isProcessingBinary = true;\n          while (binaryQueue.length > 0) {\n            let buffer = binaryQueue.shift();\n            if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();\n            await handleBinaryMessage(buffer);\n          }\n          isProcessingBinary = false;\n        }\n\n        ws.onmessage = (event) => {\n          if (typeof event.data === 'string') {\n            const msg = JSON.parse(event.data);\n            handleTextMessage(msg);\n          } else {\n            binaryQueue.push(event.data);\n            processBinaryQueue();\n          }\n        };\n\n        ws.onclose = (ev) => {\n          console.log('[DocTransit] WS closed, code:', ev.code, 'reason:', ev.reason, 'opened:', opened);\n          if (opened && state.sessionId) {\n            setStatus(false, 'RECONNECTING...');\n            setTimeout(() => {\n              if (state.sessionId && (!state.ws || state.ws.readyState !== WebSocket.OPEN)) {\n                connectToSession(state.sessionId);\n              }\n            }, 1500);\n            return;\n          }\n          disconnectPhoneSession();\n          if (!opened) {\n            setStatus(false, 'FAILED TO CONNECT');\n            const banner = document.getElementById('url-warning-banner');\n            if (banner) {\n              banner.style.display = 'block';\n              banner.innerHTML = '[ ! ] COULD NOT REACH SERVER — CHECK URL IN SETTINGS';\n            }\n          }\n        };\n\n        ws.onerror = (err) => {\n          console.error('[DocTransit] WS error:', err);\n          setStatus(false, 'CONNECTION ERROR');\n        };\n      } catch (e) {\n        console.error('[DocTransit] connectToSession error:', e);\n        setStatus(false, 'ERROR: ' + (e.message || 'Unknown'));\n        alert('Connection failed: ' + (e.message || e));\n      }\n    }\n\n    function setStatus(active, text) {\n      const dot = document.getElementById('status-dot');\n      const txt = document.getElementById('status-text');\n      if (active) dot.classList.add('active');\n      else dot.classList.remove('active');\n      txt.innerText = text;\n    }\n\n    function disconnectPhoneSession() {\n      clearSendWatchdog();\n      state.sending = null;\n      state.phoneSendQueue = [];\n      state.receiving = null;\n      if (state.ws) {\n        const oldWs = state.ws;\n        state.ws = null;\n        oldWs.onclose = null;\n        if (oldWs.readyState === 1) { // WebSocket.OPEN\n          try { oldWs.send(JSON.stringify({ type: 'disconnected' })); } catch (e) {}\n          setTimeout(() => { try { oldWs.close(); } catch(e) {} }, 100);\n        } else {\n          try { oldWs.close(); } catch (e) {}\n        }\n      }\n      if (state.scanner) {\n        try { \n          state.scanner.stop().catch(()=>{}); \n          state.scanner.clear();\n        } catch (e) {}\n        state.scanner = null;\n        const qrBox = document.getElementById('qr-reader');\n        if (qrBox) qrBox.style.display = 'none';\n      }\n      state.sessionId = null;\n      state.cryptoKey = null;\n      state.receiving = null;\n      state.sending = null;\n      state.phoneSendQueue = [];\n      clearChatMessages();\n      document.getElementById('status-dot').classList.remove('active');\n      setStatus(false, 'DISCONNECTED');\n      const connSec = document.getElementById('section-connect');\n      const dashSec = document.getElementById('section-dashboard');\n      const transSec = document.getElementById('section-transferring');\n      const inputEl = document.getElementById('session-input');\n      if (connSec) connSec.style.display = 'block';\n      if (dashSec) dashSec.style.display = 'none';\n      if (transSec) transSec.style.display = 'none';\n      if (inputEl) inputEl.value = '';\n    }\n\n    function handleTextMessage(msg) {\n      if (msg.type === 'folder_request') {\n        if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n          state.ws.send(JSON.stringify({\n            type: 'folders',\n            folders: [\n              { id: 'root', name: 'iPhone Downloads', parentId: null },\n              { id: 'photos', name: 'Camera & Photos', parentId: 'root' },\n              { id: 'documents', name: 'Files App', parentId: 'root' }\n            ]\n          }));\n        }\n      } else if (msg.type === 'text_message') {\n        appendChatMessage('PEER', msg.text);\n      } else if (msg.type === 'transfer_init') {\n        state.receiving = {\n          filename: msg.filename || 'received_file',\n          size: typeof msg.size === 'number' ? msg.size : 0,\n          total_chunks: typeof msg.total_chunks === 'number' ? msg.total_chunks : 0,\n          mime_type: msg.mime_type || 'application/octet-stream',\n          chunks: new Array(typeof msg.total_chunks === 'number' ? msg.total_chunks : 0),\n          received: 0\n        };\n        document.getElementById('card-connected').style.display = 'none';\n        document.getElementById('section-transferring').style.display = 'block';\n        document.getElementById('transfer-title').innerText = 'RECEIVING FILE...';\n        document.getElementById('transfer-filename').innerText = state.receiving.filename;\n        updateProgress(0);\n\n        if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n          state.ws.send(JSON.stringify({ type: 'ready' }));\n        }\n      } else if (msg.type === 'ready') {\n        if (state.sending) {\n          streamNextSendingChunk();\n        }\n      } else if (msg.type === 'ack') {\n        if (state.sending) {\n          startSendWatchdog();\n          state.sending.acked++;\n          const pct = Math.round((state.sending.acked / state.sending.total_chunks) * 100);\n          updateProgress(pct);\n          if (state.sending.acked === state.sending.total_chunks) {\n            clearSendWatchdog();\n            state.sending = null;\n            if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {\n              processNextPhoneSend();\n            } else {\n              document.getElementById('section-transferring').style.display = 'none';\n              document.getElementById('card-connected').style.display = 'block';\n            }\n          } else {\n            streamNextSendingChunk();\n          }\n        }\n      } else if (msg.type === 'cancelled') {\n        state.receiving = null;\n        state.sending = null;\n        clearSendWatchdog();\n        if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {\n          processNextPhoneSend();\n        } else {\n          document.getElementById('section-transferring').style.display = 'none';\n          document.getElementById('card-connected').style.display = 'block';\n        }\n      } else if (msg.type === 'disconnected') {\n        disconnectPhoneSession();\n      } else if (msg.type === 'peer_disconnected') {\n        setStatus(false, 'PC DROPPED (WAITING FOR RECONNECT...)');\n      } else if (msg.type === 'paired') {\n        setStatus(true, 'CONNECTED');\n      }\n    }\n\n    async function handleBinaryMessage(data) {\n      if (!state.receiving) return;\n      let buffer = data;\n      if (buffer instanceof Blob) {\n        buffer = await buffer.arrayBuffer();\n      }\n\n      try {\n        const result = await decryptChunk(buffer, state.cryptoKey, state.receiving.received);\n        const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : state.receiving.received;\n        state.receiving.chunks[idx] = result.plaintext;\n        \n        let receivedCount = 0;\n        for (let i = 0; i < state.receiving.total_chunks; i++) {\n          if (state.receiving.chunks[i] != null) receivedCount++;\n        }\n        state.receiving.received = receivedCount;\n\n        const pct = Math.round((receivedCount / state.receiving.total_chunks) * 100);\n        updateProgress(pct);\n\n        if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n          state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));\n        }\n\n        if (receivedCount >= state.receiving.total_chunks) {\n          finalizeReceivedFile();\n        }\n      } catch (err) {\n        console.error('Decryption failed:', err);\n        state.receiving = null;\n        if (state.receiveWatchdog) {\n          clearTimeout(state.receiveWatchdog);\n          state.receiveWatchdog = null;\n        }\n        if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n          state.ws.send(JSON.stringify({ type: 'cancelled' }));\n        }\n        if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {\n          processNextPhoneSend();\n        } else {\n          document.getElementById('section-transferring').style.display = 'none';\n          document.getElementById('card-connected').style.display = 'block';\n        }\n        return;\n      }\n\n      if (state.receiveWatchdog) clearTimeout(state.receiveWatchdog);\n      state.receiveWatchdog = setTimeout(() => {\n        if (state.receiving) {\n          console.warn('Receive stalled — resetting');\n          state.receiving = null;\n          state.receiveWatchdog = null;\n          document.getElementById('section-transferring').style.display = 'none';\n          document.getElementById('card-connected').style.display = 'block';\n        }\n      }, 15000);\n    }\n\n    function updateProgress(pct) {\n      document.getElementById('transfer-pct').innerText = `${pct}%`;\n      const fillBar = document.getElementById('transfer-bar');\n      if (fillBar) fillBar.style.width = `${pct}%`;\n      const prog = document.getElementById('transfer-progress');\n      if (prog) prog.value = pct;\n    }\n\n    let fileCounter = 0;\n\n    async function finalizeReceivedFile() {\n      const rec = state.receiving;\n      if (state.receiveWatchdog) {\n        clearTimeout(state.receiveWatchdog);\n        state.receiveWatchdog = null;\n      }\n      document.getElementById('section-transferring').style.display = 'none';\n      document.getElementById('card-connected').style.display = 'block';\n      state.receiving = null;\n\n      const blob = new Blob(rec.chunks, { type: rec.mime_type });\n\n      if (rec.filename === 'message.txt' && rec.size < 50 * 1024) {\n        const text = await blob.text();\n        appendChatMessage('PEER', text);\n        return;\n      }\n\n      const url = URL.createObjectURL(blob);\n      const fileId = 'file_' + (++fileCounter);\n      const fileObj = new File([blob], rec.filename, { type: rec.mime_type });\n      \n      const isImage = (rec.mime_type && rec.mime_type.startsWith('image/')) || rec.filename.match(/\\.(jpg|jpeg|png|gif|webp|heic|bmp)$/i);\n      \n      state.completedFilesMap[fileId] = { url, file: fileObj, filename: rec.filename, mimeType: rec.mime_type, isImage };\n      if (isImage) {\n        state.photoKeys.push(fileId);\n      }\n\n      const list = document.getElementById('completed-files-list');\n      document.getElementById('section-completed').style.display = 'block';\n\n      if (state.photoKeys.length > 0) {\n        const galBtn = document.getElementById('phone-gallery-btn');\n        galBtn.style.display = 'inline-block';\n        galBtn.innerText = `[ PREVIEW ALL PHOTOS (${state.photoKeys.length}) ]`;\n      }\n\n      const div = document.createElement('div');\n      div.className = 'file-item';\n      div.innerHTML = `\n        <div style=\"display:flex; align-items:center; overflow:hidden; flex:1;\">\n          <div class=\"file-icon\">[ ↓ ]</div>\n          <div style=\"flex:1; overflow:hidden; padding-right: 8px;\">\n            <div class=\"file-name\">${rec.filename}</div>\n            <div class=\"file-size\">${formatSize(rec.size)} — READY</div>\n          </div>\n        </div>\n        <div style=\"display:flex; gap:6px;\">\n          ${isImage ? `<button style=\"padding: 8px 12px; font-size:11px; background:var(--surface); color:#FFF; border: 1px solid var(--border); min-height:36px;\" onclick=\"openPhoneGalleryById('${fileId}')\">[ PREVIEW ]</button>` : ''}\n          <button style=\"padding: 8px 12px; font-size:11px; background:#FFFFFF; color:#000000; border: 1px solid var(--border); font-weight:800; min-height:36px;\" onclick=\"shareOrSaveFileById('${fileId}')\">[ SAVE ]</button>\n          <button style=\"padding: 8px 12px; font-size:11px; background:transparent; color:#EF4444; border: 1px solid #EF4444; font-weight:800; min-height:36px; cursor:pointer;\" onclick=\"deletePhoneFileById('${fileId}', this)\">[ DELETE ]</button>\n        </div>\n      `;\n      list.prepend(div);\n    }\n\n    function deletePhoneFileById(fileId, btnElement) {\n      if (state.completedFilesMap && state.completedFilesMap[fileId]) {\n        if (state.completedFilesMap[fileId].url) {\n          try { URL.revokeObjectURL(state.completedFilesMap[fileId].url); } catch (e) {}\n        }\n        delete state.completedFilesMap[fileId];\n      }\n      const pIdx = state.photoKeys ? state.photoKeys.indexOf(fileId) : -1;\n      if (pIdx >= 0) {\n        state.photoKeys.splice(pIdx, 1);\n      }\n      if (btnElement) {\n        const item = btnElement.closest('.file-item');\n        if (item) item.remove();\n      }\n      const galBtn = document.getElementById('phone-gallery-btn');\n      if (galBtn) {\n        if (state.photoKeys && state.photoKeys.length > 0) {\n          galBtn.innerText = `[ PREVIEW ALL PHOTOS (${state.photoKeys.length}) ]`;\n        } else {\n          galBtn.style.display = 'none';\n        }\n      }\n      const list = document.getElementById('completed-files-list');\n      if (!list || list.children.length === 0) {\n        const sec = document.getElementById('section-completed');\n        if (sec) sec.style.display = 'none';\n      }\n    }\n\n    function formatSize(bytes) {\n      if (!bytes || bytes <= 0 || isNaN(bytes)) return '0 B';\n      if (bytes < 1024) return bytes + ' B';\n      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';\n      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';\n    }\n\n    function openPhoneGalleryById(fileId) {\n      const idx = state.photoKeys.indexOf(fileId);\n      openPhoneGallery(idx >= 0 ? idx : 0);\n    }\n\n    function openPhoneGallery(index) {\n      if (state.photoKeys.length === 0) return;\n      currentPhoneGalleryIndex = index;\n      if (currentPhoneGalleryIndex < 0) currentPhoneGalleryIndex = 0;\n      if (currentPhoneGalleryIndex >= state.photoKeys.length) currentPhoneGalleryIndex = state.photoKeys.length - 1;\n      updatePhoneGalleryView();\n      document.getElementById('phone-lightbox').style.display = 'flex';\n    }\n\n    function updatePhoneGalleryView() {\n      const fileId = state.photoKeys[currentPhoneGalleryIndex];\n      const item = state.completedFilesMap[fileId];\n      if (!item) return;\n\n      document.getElementById('phone-lightbox-title').innerText = item.filename;\n      document.getElementById('phone-lightbox-counter').innerText = `${currentPhoneGalleryIndex + 1} / ${state.photoKeys.length}`;\n      document.getElementById('phone-lightbox-img').src = item.url;\n\n      const strip = document.getElementById('phone-thumb-strip');\n      strip.innerHTML = '';\n      state.photoKeys.forEach((key, i) => {\n        const photo = state.completedFilesMap[key];\n        const img = document.createElement('img');\n        img.className = 'thumb-item' + (i === currentPhoneGalleryIndex ? ' active' : '');\n        img.src = photo.url;\n        img.onclick = () => {\n          currentPhoneGalleryIndex = i;\n          updatePhoneGalleryView();\n        };\n        strip.appendChild(img);\n      });\n    }\n\n    function changePhoneGallery(delta) {\n      if (state.photoKeys.length === 0) return;\n      currentPhoneGalleryIndex += delta;\n      if (currentPhoneGalleryIndex < 0) currentPhoneGalleryIndex = state.photoKeys.length - 1;\n      if (currentPhoneGalleryIndex >= state.photoKeys.length) currentPhoneGalleryIndex = 0;\n      updatePhoneGalleryView();\n    }\n\n    function closePhoneGallery() {\n      document.getElementById('phone-lightbox').style.display = 'none';\n    }\n\n    function saveCurrentPhonePhoto() {\n      const fileId = state.photoKeys[currentPhoneGalleryIndex];\n      if (fileId) shareOrSaveFileById(fileId);\n    }\n\n    function deleteCurrentPhonePhoto() {\n      const fileId = state.photoKeys[currentPhoneGalleryIndex];\n      if (fileId) {\n        deletePhoneFileById(fileId, null);\n        if (state.photoKeys.length > 0) {\n          if (currentPhoneGalleryIndex >= state.photoKeys.length) currentPhoneGalleryIndex = Math.max(0, state.photoKeys.length - 1);\n          openPhoneGalleryById(state.photoKeys[currentPhoneGalleryIndex]);\n        } else {\n          closePhoneGallery();\n        }\n      }\n    }\n\n    async function saveAllPhonePhotos() {\n      if (!state.photoKeys || state.photoKeys.length === 0) return;\n      \n      const btn = document.getElementById('phone-lightbox-save-all');\n      if (btn) { btn.innerText = '[ PROCESSING... ]'; btn.style.pointerEvents = 'none'; }\n      \n      const filesToShare = [];\n      for (const key of state.photoKeys) {\n        const item = (state.completedFilesMap || {})[key];\n        if (item && item.file) filesToShare.push(item.file);\n      }\n      \n      let sharedNative = false;\n      try {\n        if (navigator.canShare && navigator.canShare({ files: filesToShare })) {\n          await navigator.share({ files: filesToShare });\n          sharedNative = true;\n        }\n      } catch (err) {\n        if (err.name === 'AbortError') sharedNative = true;\n      }\n      \n      if (sharedNative) {\n        if (btn) { btn.innerText = '[ SAVE ALL AS ZIP ]'; btn.style.pointerEvents = 'auto'; }\n        return;\n      }\n\n      // Fallback to zip using fflate\n      try {\n        if (btn) { btn.innerText = '[ ZIPPING... ]'; btn.style.pointerEvents = 'none'; }\n        const zipData = {};\n        for (let i = 0; i < filesToShare.length; i++) {\n          const file = filesToShare[i];\n          let filename = file.name || `file_${i}`;\n          while (zipData[filename]) {\n            const parts = filename.split('.');\n            if (parts.length > 1) {\n              const ext = parts.pop();\n              filename = parts.join('.') + `_${i}.` + ext;\n            } else {\n              filename = filename + `_${i}`;\n            }\n          }\n          const buf = await file.arrayBuffer();\n          zipData[filename] = new Uint8Array(buf);\n        }\n        \n        const zipped = window.fflate.zipSync(zipData);\n        const blob = new Blob([zipped], { type: 'application/zip' });\n        const url = URL.createObjectURL(blob);\n        \n        const a = document.createElement('a');\n        a.href = url;\n        const timestamp = new Date().getTime();\n        a.download = `LabBridge_Transfer_${timestamp}.zip`;\n        document.body.appendChild(a);\n        a.click();\n        document.body.removeChild(a);\n        setTimeout(() => URL.revokeObjectURL(url), 10000);\n      } catch (err) {\n        console.error(err);\n        alert(\"Failed to zip files.\");\n      } finally {\n        if (btn) { btn.innerText = '[ SAVE ALL AS ZIP ]'; btn.style.pointerEvents = 'auto'; }\n      }\n    }\n\n    async function shareOrSaveFileById(fileId) {\n      const item = (state.completedFilesMap || {})[fileId];\n      if (!item) return;\n      \n      if (navigator.canShare && navigator.canShare({ files: [item.file] })) {\n        try {\n          await navigator.share({\n            files: [item.file]\n          });\n          return;\n        } catch (err) {\n          if (err.name === 'AbortError') return;\n        }\n      }\n\n      const a = document.createElement('a');\n      a.href = item.url;\n      a.download = item.filename;\n      a.target = '_blank';\n      document.body.appendChild(a);\n      a.click();\n      document.body.removeChild(a);\n    }\n\n    function handlePhoneFilesSelected(event) {\n      const files = event.target.files;\n      if (!files || files.length === 0) return;\n      state.phoneSendQueue = state.phoneSendQueue || [];\n      state.phoneSendQueue.push(...Array.from(files));\n      event.target.value = '';\n      if (!state.sending) {\n        processNextPhoneSend();\n      } else {\n        document.getElementById('transfer-title').innerText = `SENDING (${state.phoneSendQueue.length} IN QUEUE)...`;\n      }\n    }\n\n    function processNextPhoneSend() {\n      if (!state.phoneSendQueue || state.phoneSendQueue.length === 0) {\n        document.getElementById('section-transferring').style.display = 'none';\n        document.getElementById('card-connected').style.display = 'block';\n        state.sending = null;\n        return;\n      }\n      const file = state.phoneSendQueue.shift();\n      \n      const CHUNK_SIZE = 512 * 1024;\n      const total_chunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));\n\n      state.sending = {\n        file,\n        total_chunks,\n        CHUNK_SIZE,\n        nextIndex: 0,\n        acked: 0\n      };\n\n      document.getElementById('card-connected').style.display = 'none';\n      document.getElementById('section-transferring').style.display = 'block';\n      if (state.phoneSendQueue.length > 0) {\n        document.getElementById('transfer-title').innerText = `SENDING TO PC (${state.phoneSendQueue.length} REMAINING)...`;\n      } else {\n        document.getElementById('transfer-title').innerText = 'SENDING TO PC...';\n      }\n      document.getElementById('transfer-filename').innerText = file.name;\n      updateProgress(0);\n\n      if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n        state.ws.send(JSON.stringify({\n          type: 'transfer_init',\n          filename: file.name,\n          size: file.size,\n          total_chunks: total_chunks,\n          mime_type: file.type || 'application/octet-stream'\n        }));\n      }\n    }\n\n    function streamNextSendingChunk() {\n      if (!state.sending) return;\n      if (state.sending.nextIndex >= state.sending.total_chunks) {\n        // All chunks sent — wait for remaining acks, don't send more\n        return;\n      }\n      if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {\n        console.warn('WS not open, pausing send');\n        return;\n      }\n      const chunkIndex = state.sending.nextIndex;\n      state.sending.nextIndex++;\n\n      const CHUNK_SIZE = 512 * 1024;\n      const offset = chunkIndex * CHUNK_SIZE;\n      const slice = state.sending.file.slice(offset, offset + CHUNK_SIZE);\n\n      slice.arrayBuffer().then(ab => {\n        return encryptChunk(ab, state.cryptoKey, chunkIndex);\n      }).then(encrypted => {\n        if (!state.sending || !state.ws || state.ws.readyState !== WebSocket.OPEN) return;\n        state.ws.send(encrypted);\n      }).catch(err => {\n        console.error('Chunk encrypt/send error:', err);\n      });\n    }\n\n    // Watchdog: if sending stalls for >10 seconds, reset and show error\n    function startSendWatchdog() {\n      if (state.sendWatchdog) clearTimeout(state.sendWatchdog);\n      state.sendWatchdog = setTimeout(() => {\n        if (state.sending && state.sending.acked < state.sending.total_chunks) {\n          console.warn('Send stalled — resetting');\n          state.sending = null;\n          document.getElementById('section-transferring').style.display = 'none';\n          document.getElementById('card-connected').style.display = 'block';\n          alert('Transfer stalled. Please try again.');\n        }\n      }, 10000);\n    }\n\n    function clearSendWatchdog() {\n      if (state.sendWatchdog) {\n        clearTimeout(state.sendWatchdog);\n        state.sendWatchdog = null;\n      }\n    }\n\n    function cancelTransfer() {\n      if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n        state.ws.send(JSON.stringify({ type: 'cancelled' }));\n      }\n      document.getElementById('section-transferring').style.display = 'none';\n      document.getElementById('card-connected').style.display = 'block';\n      state.receiving = null;\n      state.sending = null;\n    }\n\n    async function toggleScanner() {\n      const box = document.getElementById('qr-reader');\n      if (box.style.display === 'block') {\n        if (state.scanner) {\n          try { await state.scanner.stop(); } catch(e){}\n        }\n        box.style.display = 'none';\n        return;\n      }\n\n      // Check if camera API is available\n      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {\n        alert('Camera access is not available in this browser/context. Try opening DocTransit in Safari instead of the PWA, or manually enter the session ID.');\n        return;\n      }\n\n      box.style.display = 'block';\n\n      // Stop any existing scanner before creating a new one\n      if (state.scanner) {\n        try { await state.scanner.stop(); } catch(e){}\n        state.scanner = null;\n      }\n\n      try {\n        // Clear the container to avoid stale DOM issues\n        box.innerHTML = '';\n        state.scanner = new Html5Qrcode('qr-reader');\n\n        await state.scanner.start(\n          { facingMode: \"environment\" },\n          { fps: 10, qrbox: { width: 220, height: 220 } },\n          (decodedText) => {\n            if (state.scanner) {\n              try { state.scanner.stop(); } catch(e){}\n              document.getElementById('qr-reader').style.display = 'none';\n            }\n            try {\n              const uri = new URL(decodedText);\n              const s = uri.searchParams.get('s');\n              if (s && s.length === 12) {\n                connectToSession(s);\n                return;\n              }\n            } catch(e){}\n\n            try {\n              const data = JSON.parse(decodedText);\n              if (data.s && data.s.length === 12) {\n                connectToSession(data.s);\n                return;\n              }\n            } catch(e){}\n\n            if (decodedText && decodedText.length === 12) {\n              connectToSession(decodedText);\n            }\n          },\n          (errorMessage) => {}\n        );\n      } catch (err) {\n        console.error('[DocTransit] Scanner error:', err);\n        box.style.display = 'none';\n        state.scanner = null;\n        alert('Camera error: ' + (err.message || err) + '\\n\\nTip: If using PWA, try opening in Safari. Or enter the session ID manually.');\n      }\n    }\n\n    document.addEventListener(\"visibilitychange\", () => {\n      if (document.hidden && state.scanner) {\n        try { state.scanner.stop(); } catch(e){}\n        document.getElementById('qr-reader').style.display = 'none';\n      }\n    });\n\n    if ('serviceWorker' in navigator) {\n      window.addEventListener('load', () => {\n        navigator.serviceWorker.register('sw.js').catch(() => {});\n      });\n    }\n\n    let unreadChatCount = 0;\n\n    function openChatModal() {\n      state.chatModalOpen = true;\n      document.getElementById('chat-modal').style.display = 'flex';\n      unreadChatCount = 0;\n      updateChatBadges();\n      const input = document.getElementById('chat-modal-input');\n      if (input) { input.focus(); input.style.height = '44px'; }\n      const container = document.getElementById('chat-modal-messages');\n      if (container) container.scrollTop = container.scrollHeight;\n    }\n\n    function closeChatModal() {\n      state.chatModalOpen = false;\n      document.getElementById('chat-modal').style.display = 'none';\n    }\n\n    function clearChatMessages() {\n      unreadChatCount = 0;\n      updateChatBadges();\n      closeChatModal();\n      const list = document.getElementById('chat-modal-messages');\n      if (list) {\n        const emptyDiv = document.createElement('div');\n        emptyDiv.id = 'chat-empty-state';\n        emptyDiv.style.cssText = 'margin: auto; color: var(--text-3); font-family: var(--mono); font-size: 12px; text-align: center; padding: 20px;';\n        emptyDiv.innerText = 'No messages in this session yet.';\n        list.innerHTML = '';\n        list.appendChild(emptyDiv);\n      }\n    }\n\n    function updateChatBadges() {\n      const badge = document.getElementById('phone-chat-badge');\n      if (badge) {\n        if (unreadChatCount > 0) {\n          badge.style.display = 'inline-block';\n          badge.innerText = `${unreadChatCount} NEW`;\n        } else {\n          badge.style.display = 'none';\n        }\n      }\n    }\n\n    function appendChatMessage(sender, text) {\n      const emptyState = document.getElementById('chat-empty-state');\n      if (emptyState) emptyState.remove();\n\n      const list = document.getElementById('chat-modal-messages');\n      if (!list) return;\n\n      const isMe = sender === 'YOU';\n      const wrapper = document.createElement('div');\n      wrapper.style.display = 'flex';\n      wrapper.style.flexDirection = 'column';\n      wrapper.style.alignItems = isMe ? 'flex-end' : 'flex-start';\n      wrapper.style.width = '100%';\n\n      const tag = document.createElement('span');\n      tag.style.fontFamily = 'var(--mono)';\n      tag.style.fontSize = '10px';\n      tag.style.color = 'var(--text-3)';\n      tag.style.marginBottom = '4px';\n      tag.innerText = isMe ? '[ YOU ]' : '[ PEER ]';\n\n      const msgDiv = document.createElement('div');\n      msgDiv.style.cssText = 'padding: 8px 12px; font-family: var(--mono); font-size: 13px; color: #FFFFFF; white-space: pre-wrap; max-width: 85%; word-break: break-word;';\n      msgDiv.style.background = isMe ? 'var(--surface-2)' : '#18181B';\n      msgDiv.style.border = isMe ? '1px solid var(--border)' : '1px solid #3F3F46';\n      msgDiv.textContent = text;\n\n      const copyBtn = document.createElement('button');\n      copyBtn.innerText = '[ COPY ]';\n      copyBtn.style.cssText = 'margin-top: 2px; background: transparent; border: none; color: var(--text-3); font-size: 9px; font-family: var(--mono); cursor: pointer; padding: 0;';\n      copyBtn.onclick = (e) => {\n        e.stopPropagation();\n        navigator.clipboard.writeText(text);\n        copyBtn.innerText = '[ COPIED! ]';\n        setTimeout(() => { copyBtn.innerText = '[ COPY ]'; }, 1500);\n      };\n\n      wrapper.appendChild(tag);\n      wrapper.appendChild(msgDiv);\n      wrapper.appendChild(copyBtn);\n      list.appendChild(wrapper);\n\n      list.scrollTop = list.scrollHeight;\n\n      if (!state.chatModalOpen && !isMe) {\n        unreadChatCount++;\n        updateChatBadges();\n      }\n    }\n\n    function sendModalChatMessage() {\n      const input = document.getElementById('chat-modal-input');\n      if (!input) return;\n      const text = input.value.trim();\n      if (!text) return;\n\n      if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n        state.ws.send(JSON.stringify({ type: 'text_message', text: text }));\n        appendChatMessage('YOU', text);\n      }\n      input.value = '';\n    }\n  </script>\n</body>\n</html>\n";
+export const PHONE_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DocTransit — Seamless File Transfer</title>
+  <meta name="description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
+  <meta property="og:title" content="DocTransit">
+  <meta property="og:description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
+  <meta property="og:image" content="https://doctransit.in/preview.jpg">
+  <meta property="og:url" content="https://doctransit.in/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="/icon.png" />
+  <script src="/fflate.min.js"></script>
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DocTransit" />
+  <script src="/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg:           #000000;
+      --surface:      #09090B;
+      --surface-2:    #121214;
+      --border:       #27272A;
+      --border-hover: #FFFFFF;
+      --text:         #FFFFFF;
+      --text-2:       #A1A1AA;
+      --text-3:       #52525B;
+      --mono:         'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 24px;
+      margin: 0;
+    }
+
+    /* Chat Modal & Mobile Optimization */
+    #chat-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .chat-modal-box {
+      background: #000000;
+      width: 100%;
+      height: 100%;
+      max-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-modal-header {
+      padding: 12px 16px;
+      padding-top: max(12px, env(safe-area-inset-top));
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-2);
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .chat-modal-messages {
+      flex: 1;
+      padding: 12px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #000000;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chat-modal-footer {
+      padding: 10px 12px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border);
+      background: var(--surface-2);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      width: 100%;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+    .chat-modal-footer textarea {
+      flex: 1;
+      min-width: 0;
+      height: 38px;
+      min-height: 38px;
+      max-height: 100px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 8px 10px;
+      color: #FFFFFF;
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      resize: none;
+      line-height: 1.4;
+      box-sizing: border-box;
+    }
+    .chat-modal-footer textarea:focus {
+      border-color: #FFFFFF;
+    }
+    .chat-modal-footer button {
+      flex-shrink: 0;
+      background: #FFFFFF;
+      color: #000000;
+      border: 1px solid var(--border);
+      border-radius: 0;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 0 12px;
+      height: 38px;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    .chat-modal-footer button:active { opacity: 0.7; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 0;
+      border: 1px solid var(--border);
+    }
+
+    .brand-name {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 0;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-family: var(--mono);
+      color: var(--text-2);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 0;
+      background: var(--text-3);
+      flex-shrink: 0;
+    }
+
+    .status-dot.active {
+      background: #FFFFFF;
+      box-shadow: 0 0 8px #FFFFFF;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 20px;
+      margin-bottom: 14px;
+      width: 100%;
+    }
+
+    h2 {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    p {
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.5;
+      font-family: var(--mono);
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #FFFFFF;
+    }
+
+    button {
+      width: 100%;
+      background: #FFFFFF;
+      color: #000000;
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: opacity 0.15s;
+      min-height: 44px;
+      text-transform: uppercase;
+    }
+
+    button:active { opacity: 0.8; }
+
+    button.secondary {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    #url-warning-banner {
+      font-family: var(--mono);
+      color: #FFFFFF;
+      font-size: 11px;
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      font-weight: 700;
+    }
+
+    #dropzone-phone {
+      border: 1px dashed var(--border);
+      border-radius: 0;
+      padding: 36px 16px;
+      text-align: center;
+      position: relative;
+      margin-top: 14px;
+      background: var(--surface-2);
+      transition: all 0.2s;
+    }
+
+    #dropzone-phone:active {
+      border-color: #FFFFFF;
+      background: var(--surface);
+    }
+
+    #dropzone-phone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 2px;
+      background: var(--surface-2);
+      border-radius: 0;
+      overflow: hidden;
+      margin: 14px 0;
+      border: 1px solid var(--border);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #FFFFFF;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      margin-top: 10px;
+    }
+
+    .file-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text);
+      flex-shrink: 0;
+      font-weight: 800;
+    }
+
+    .file-name {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-2);
+      margin-top: 2px;
+    }
+
+    .qr-scanner-box {
+      margin-top: 16px;
+      border-radius: 0;
+      overflow: hidden;
+      display: none;
+      background: #000;
+      border: 1px solid var(--border);
+    }
+
+    /* Lightbox Modal */
+    #phone-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 1000;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .lightbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+    }
+
+    .lightbox-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .thumb-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .thumb-item {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .thumb-item.active {
+      border: 2px solid #FFFFFF;
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 24px;
+      text-align: center;
+    }
+
+    .made-by-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: border-color 0.15s;
+    }
+
+    .made-by-badge:hover {
+      border-color: #FFFFFF;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="logo.png" alt="DocTransit Logo" />
+      <div>
+        <div class="brand-name">DOCTRANSIT</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <div class="status-pill">
+        <span id="status-dot" class="status-dot"></span>
+        <span id="status-text">DISCONNECTED</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Permanent Android APK Button -->
+  <a id="android-apk-btn" href="doctransit.apk" download="doctransit.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
+    [ DOWNLOAD NATIVE ANDROID APK ]
+  </a>
+
+  <!-- Section 1: Connect / Pairing -->
+  <div id="section-connect" class="card">
+    <div style="background: var(--surface-2); border: 1px solid var(--border); padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: 11px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;">[ WHAT IS DOCTRANSIT? ]</span>
+        <a href="install.html" style="background: #FFFFFF; color: #000000; padding: 4px 10px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;">[ GET APK ]</a>
+      </div>
+      <p style="font-size: 12px; color: var(--text-2); line-height: 1.4; font-family: var(--mono);">
+        DocTransit streams files peer-to-peer between your mobile device and PC terminal with 256-bit E2E encryption. Zero cloud storage or login required.
+      </p>
+    </div>
+
+    <h2>CONNECT TO PC SESSION</h2>
+    <p>Scan the QR code displayed on your PC terminal or input the 12-character session identifier.</p>
+    
+    <div id="url-warning-banner" style="display:none;">[ ! ] UPDATE SERVER WORKER URL IN SETTINGS</div>
+
+    <div style="margin-top: 16px;">
+      <label style="font-size: 11px; font-weight: 700; color: var(--text-2); display: block; margin-bottom: 6px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px;">SERVER URL (WORKER):</label>
+      <input type="text" id="worker-url-input" placeholder="e.g. http://192.168.1.5:8787" />
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="session-input" placeholder="e.g. a1b2c3d4e5f6" maxlength="12" />
+    </div>
+    <div style="margin-top: 12px;">
+      <button onclick="connectManual()">[ CONNECT TO SESSION ]</button>
+    </div>
+
+    <div style="margin-top: 12px; text-align: center;">
+      <button class="secondary" onclick="toggleScanner()">[ SCAN PC QR CODE ]</button>
+    </div>
+
+    <div id="qr-reader" class="qr-scanner-box"></div>
+  </div>
+
+  <!-- Section 2: Connected Dashboard -->
+  <div id="section-dashboard" style="display: none;">
+    <div id="card-connected" class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+        <h2 style="margin: 0;">CONNECTED TO PC SESSION</h2>
+        <button onclick="disconnectPhoneSession()" style="background: transparent; border: 1px solid #EF4444; color: #EF4444; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase;">[ DISCONNECT ]</button>
+      </div>
+      <p id="session-info-text">Ready to transfer high-speed encrypted files over WebSockets.</p>
+      
+      <div id="dropzone-phone">
+        <input type="file" id="phone-file-input" multiple onchange="handlePhoneFilesSelected(event)" />
+        <div style="font-family: var(--mono); font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 8px;">[ + ] TAP TO SEND FILES TO PC</div>
+        <div style="font-size: 11px; color: var(--text-2);">PHOTOS · DOCUMENTS · ARCHIVES</div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <button id="btn-phone-chat" onclick="openChatModal()" style="width: 100%; background: var(--surface-2); border: 1px solid var(--border); padding: 14px; color: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase;">
+          <span>[ OPEN MESSAGE WINDOW ]</span>
+          <span id="phone-chat-badge" style="display:none; background: #FFFFFF; color: #000000; padding: 2px 8px; font-size: 11px; font-weight: 800;">0 NEW</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Transfer -->
+    <div id="section-transferring" class="card" style="display: none;">
+      <h2 id="transfer-title">RECEIVING FILE...</h2>
+      <div class="file-item">
+        <div class="file-icon">[ ↓ ]</div>
+        <div style="flex: 1; overflow: hidden;">
+          <div id="transfer-filename" class="file-name">file.pdf</div>
+          <div id="transfer-pct" class="file-size">0%</div>
+        </div>
+      </div>
+      <progress id="transfer-progress" value="0" max="100" style="display:none;"></progress>
+      <div class="progress-track">
+        <div id="transfer-bar" class="progress-bar"></div>
+      </div>
+      <button class="secondary" style="color: #EF4444; border-color: #27272A; margin-top: 12px;" onclick="cancelTransfer()">[ CANCEL TRANSFER ]</button>
+    </div>
+
+    <!-- Completed Files & Multi-Photo Preview Gallery -->
+    <div id="section-completed" class="card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h2>RECEIVED FILES</h2>
+        <button id="phone-gallery-btn" style="width: auto; padding: 6px 12px; font-size: 11px; min-height: 32px; display: none;" onclick="openPhoneGallery(0)">[ PREVIEW ALL PHOTOS ]</button>
+      </div>
+      <p>Select any item below to open, save to iPhone Files app, share, or preview.</p>
+      <div id="completed-files-list"></div>
+    </div>
+  </div>
+
+  <!-- Phone Multi-Photo Lightbox -->
+  <div id="phone-lightbox">
+    <div class="lightbox-header">
+      <div>
+        <div id="phone-lightbox-title" style="font-size: 13px; font-weight: 800; color: #FFFFFF;">filename.jpg</div>
+        <div id="phone-lightbox-counter" style="font-size: 11px; color: var(--text-2); margin-top: 2px;">1 / 1</div>
+      </div>
+      <button style="width: auto; min-height: 34px; padding: 6px 14px; background: var(--surface); color: #FFFFFF; border: 1px solid var(--border);" onclick="closePhoneGallery()">[ CLOSE ]</button>
+    </div>
+
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 16px 0;">
+      <img id="phone-lightbox-img" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid var(--border);" />
+    </div>
+
+    <div class="lightbox-nav" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+      <button style="flex: 1; min-height: 40px; background: var(--surface);" onclick="changePhoneGallery(-1)">[ PREV ]</button>
+      <button id="phone-lightbox-save" style="flex: 1.5; min-height: 40px; background: #FFFFFF; color: #000000;" onclick="saveCurrentPhonePhoto()">[ SAVE ]</button>
+      <button style="flex: 1; min-height: 40px; background: transparent; color: #EF4444; border: 1px solid #EF4444;" onclick="deleteCurrentPhonePhoto()">[ DELETE ]</button>
+      <button style="flex: 1; min-height: 40px; background: var(--surface);" onclick="changePhoneGallery(1)">[ NEXT ]</button>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button id="phone-lightbox-save-all" style="flex: 1; min-height: 40px; background: transparent; color: #FFFFFF; border: 1px solid var(--border);" onclick="saveAllPhonePhotos()">[ SAVE ALL AS ZIP ]</button>
+    </div>
+
+    <div id="phone-thumb-strip" class="thumb-strip"></div>
+  </div>
+
+  <!-- Pop-Open Messages Modal -->
+  <div id="chat-modal">
+    <div class="chat-modal-box">
+      <div class="chat-modal-header">
+        <div style="font-family: var(--mono); font-size: 13px; font-weight: 800; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">[ MESSAGES / CHAT ]</div>
+        <button onclick="closeChatModal()" style="background: transparent; border: 1px solid var(--border); color: var(--text-2); padding: 4px 10px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; font-family: var(--mono);">[ X ]</button>
+      </div>
+      <div id="chat-modal-messages" class="chat-modal-messages">
+        <div id="chat-empty-state" style="margin: auto; color: var(--text-3); font-family: var(--mono); font-size: 12px; text-align: center;">No messages in this session yet.</div>
+      </div>
+      <div class="chat-modal-footer">
+        <textarea id="chat-modal-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendModalChatMessage();}"></textarea>
+        <button onclick="sendModalChatMessage()">SEND</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://github.com/dev7shah" target="_blank" class="made-by-badge">MADE BY DEV7SHAH</a>
+  </footer>
+
+  <script>
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      const origGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      navigator.mediaDevices.getUserMedia = function(constraints) {
+        if (constraints && typeof constraints === 'object') {
+          constraints.audio = false;
+        }
+        return origGetUserMedia(constraints);
+      };
+    }
+
+
+    const state = {
+      chatModalOpen: false,
+      ws: null,
+      sessionId: null,
+      workerHttpUrl: null,
+      cryptoKey: null,
+      receiving: null,
+      sending: null,
+      receiveWatchdog: null,
+      sendWatchdog: null,
+      phoneSendQueue: [],
+      scanner: null,
+      completedFilesMap: {},
+      photoKeys: [],
+      galleryIndex: 0,
+      rtcPeerConnection: null,
+      rtcDataChannel: null
+    };
+
+    let currentPhoneGalleryIndex = 0;
+
+    function initApp() {
+      try {
+        if (/android/i.test(navigator.userAgent)) {
+          const btn = document.getElementById('android-apk-btn');
+          if (btn) btn.style.display = 'block';
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        let s = params.get('s');
+        const pathMatch = window.location.pathname.match(/\\/session\\/([a-zA-Z0-9]{12})\\/phone/);
+        if (!s && pathMatch) {
+          s = pathMatch[1];
+        }
+        // Also try hash fragment as fallback
+        if (!s && window.location.hash) {
+          try {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            s = hashParams.get('s');
+          } catch(e){}
+        }
+        const w = params.get('w');
+        
+        let savedUrl = null;
+        try { savedUrl = localStorage.getItem('doctransit_worker_url'); } catch(e){}
+        
+        if (w) {
+          state.workerHttpUrl = w;
+        } else if (savedUrl && !savedUrl.includes('YOUR_SUBDOMAIN')) {
+          state.workerHttpUrl = savedUrl;
+        } else {
+          const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\\.168\\.|^10\\.|^172\\.(1[6-9]|2[0-9]|3[0-1])\\./.test(window.location.hostname);
+          state.workerHttpUrl = isFileOrLocal ? 'https://doctransit.in' : window.location.origin;
+        }
+
+        // Fallback: if workerHttpUrl is still empty, hardcode it
+        if (!state.workerHttpUrl) {
+          state.workerHttpUrl = 'https://doctransit.in';
+        }
+
+        const urlInput = document.getElementById('worker-url-input');
+        if (urlInput) urlInput.value = state.workerHttpUrl;
+
+        const warningBanner = document.getElementById('url-warning-banner');
+        const isLocalhostUrl = state.workerHttpUrl.includes('localhost') || state.workerHttpUrl.includes('127.0.0.1');
+        const isPlaceholder = state.workerHttpUrl.includes('YOUR_SUBDOMAIN');
+        const isPhoneBrowser = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+
+        if ((isLocalhostUrl || isPlaceholder) && isPhoneBrowser && warningBanner) {
+          warningBanner.style.display = 'block';
+          warningBanner.innerHTML = '[ ! ] UPDATE SERVER WORKER URL IN SETTINGS';
+        }
+
+        if (s && s.length === 12) {
+          document.getElementById('session-input').value = s;
+          connectToSession(s);
+        }
+
+
+      } catch (err) {
+        // Show error visibly on the page
+        const banner = document.getElementById('url-warning-banner');
+        if (banner) {
+          banner.style.display = 'block';
+          banner.style.color = '#EF4444';
+          banner.innerHTML = '[ ERROR ] Init failed: ' + (err.message || err) + '<br>URL: ' + window.location.href;
+        }
+
+        console.error('[DocTransit] initApp error:', err);
+      }
+    }
+
+    // Use multiple methods to ensure init runs
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      // DOM already loaded (e.g. script at end of body)
+      initApp();
+    }
+
+    async function deriveAESKey(sessionId) {
+      const enc = new TextEncoder();
+      const baseKey = await crypto.subtle.importKey(
+        'raw', enc.encode(sessionId), { name: 'HKDF' }, false, ['deriveKey']
+      );
+      return await crypto.subtle.deriveKey(
+        {
+          name: 'HKDF',
+          hash: 'SHA-256',
+          salt: enc.encode('doctransit-v2'),
+          info: enc.encode('file-transfer')
+        },
+        baseKey,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function decryptChunk(buffer, key, chunkIndex) {
+      const combined = new Uint8Array(buffer);
+      if (combined.byteLength < 12) throw new Error("Chunk too small for IV");
+      const iv = combined.slice(0, 12);
+      const view = new DataView(iv.buffer, iv.byteOffset, iv.byteLength);
+      const extractedIndex = view.getUint32(8, false);
+      const ciphertext = combined.slice(12);
+      const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+      return { chunkIndex: extractedIndex, plaintext };
+    }
+
+    async function encryptChunk(plaintextBuffer, key, chunkIndex) {
+      const iv = new Uint8Array(12);
+      crypto.getRandomValues(iv);
+      const view = new DataView(iv.buffer);
+      view.setUint32(8, chunkIndex, false);
+
+      const ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        plaintextBuffer
+      );
+
+      const combined = new Uint8Array(12 + ciphertext.byteLength);
+      combined.set(iv, 0);
+      combined.set(new Uint8Array(ciphertext), 12);
+      return combined.buffer;
+    }
+
+    async function connectManual() {
+      const s = document.getElementById('session-input').value.trim();
+      if (!s || s.length !== 12) {
+        alert('Please enter a valid 12-character session ID');
+        return;
+      }
+      connectToSession(s);
+    }
+
+    let isProcessingBinary = false;
+    const binaryQueue = [];
+    
+    async function processBinaryQueue() {
+      if (isProcessingBinary) return;
+      isProcessingBinary = true;
+      while (binaryQueue.length > 0) {
+        let buffer = binaryQueue.shift();
+        if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+        await handleBinaryMessage(buffer);
+      }
+      isProcessingBinary = false;
+    }
+
+    async function connectToSession(sessionId) {
+      try {
+        state.sessionId = sessionId;
+        const urlInput = document.getElementById('worker-url-input');
+        if (urlInput && urlInput.value.trim()) {
+          state.workerHttpUrl = urlInput.value.trim();
+          localStorage.setItem('doctransit_worker_url', state.workerHttpUrl);
+        }
+
+        if (state.scanner) {
+          try { await state.scanner.stop(); } catch(e){}
+          document.getElementById('qr-reader').style.display = 'none';
+        }
+
+        setStatus(false, 'CONNECTING...');
+
+        // Check crypto.subtle availability (requires HTTPS)
+        if (!window.crypto || !window.crypto.subtle) {
+          setStatus(false, 'HTTPS REQUIRED');
+          alert('Secure context (HTTPS) is required for encryption. Current URL: ' + window.location.href);
+          return;
+        }
+
+        try {
+          state.cryptoKey = await deriveAESKey(sessionId);
+        } catch (cryptoErr) {
+          setStatus(false, 'CRYPTO ERROR');
+          alert('Failed to derive encryption key: ' + (cryptoErr.message || cryptoErr));
+          return;
+        }
+
+        const wsUrl = state.workerHttpUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
+        const socketUrl = \`\${wsUrl}/session/\${sessionId}/phone\`;
+        console.log('[DocTransit] Connecting to:', socketUrl);
+
+        const ws = new WebSocket(socketUrl);
+        ws.binaryType = 'arraybuffer';
+        let opened = false;
+
+        ws.onopen = () => {
+          opened = true;
+          state.ws = ws;
+          setStatus(true, 'CONNECTED');
+          document.getElementById('section-connect').style.display = 'none';
+          document.getElementById('section-dashboard').style.display = 'block';
+          document.getElementById('session-info-text').innerText = \`SESSION ID: \${sessionId} — E2E ENCRYPTED\`;
+        };
+
+        ws.onmessage = (event) => {
+          if (typeof event.data === 'string') {
+            const msg = JSON.parse(event.data);
+            handleTextMessage(msg);
+          } else {
+            binaryQueue.push(event.data);
+            processBinaryQueue();
+          }
+        };
+
+        ws.onclose = (ev) => {
+          console.log('[DocTransit] WS closed, code:', ev.code, 'reason:', ev.reason, 'opened:', opened);
+          if (opened && state.sessionId) {
+            setStatus(false, 'RECONNECTING...');
+            setTimeout(() => {
+              if (state.sessionId && (!state.ws || state.ws.readyState !== WebSocket.OPEN)) {
+                connectToSession(state.sessionId);
+              }
+            }, 1500);
+            return;
+          }
+          disconnectPhoneSession();
+          if (!opened) {
+            setStatus(false, 'FAILED TO CONNECT');
+            const banner = document.getElementById('url-warning-banner');
+            if (banner) {
+              banner.style.display = 'block';
+              banner.innerHTML = '[ ! ] COULD NOT REACH SERVER — CHECK URL IN SETTINGS';
+            }
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.error('[DocTransit] WS error:', err);
+          setStatus(false, 'CONNECTION ERROR');
+        };
+      } catch (e) {
+        console.error('[DocTransit] connectToSession error:', e);
+        setStatus(false, 'ERROR: ' + (e.message || 'Unknown'));
+        alert('Connection failed: ' + (e.message || e));
+      }
+    }
+
+    async function initWebRTC() {
+      if (state.rtcPeerConnection) {
+        state.rtcPeerConnection.close();
+      }
+      
+      const config = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      };
+      
+      const pc = new RTCPeerConnection(config);
+      state.rtcPeerConnection = pc;
+      
+      pc.onicecandidate = (event) => {
+        if (event.candidate && state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'webrtc_ice', candidate: event.candidate }));
+        }
+      };
+      
+      pc.onconnectionstatechange = () => {
+        console.log('WebRTC state:', pc.connectionState);
+      };
+
+      const dc = pc.createDataChannel('fileTransfer', { negotiated: true, id: 0 });
+      dc.binaryType = 'arraybuffer';
+      dc.onopen = () => {
+        console.log('WebRTC DataChannel OPEN');
+        state.rtcDataChannel = dc;
+      };
+      dc.onclose = () => {
+        console.log('WebRTC DataChannel CLOSED');
+        state.rtcDataChannel = null;
+      };
+      dc.onmessage = (event) => {
+        if (typeof event.data !== 'string') {
+          binaryQueue.push(event.data);
+          processBinaryQueue();
+        }
+      };
+    }
+
+    function setStatus(active, text) {
+      const dot = document.getElementById('status-dot');
+      const txt = document.getElementById('status-text');
+      if (active) dot.classList.add('active');
+      else dot.classList.remove('active');
+      txt.innerText = text;
+    }
+
+    function disconnectPhoneSession() {
+      clearSendWatchdog();
+      state.sending = null;
+      state.phoneSendQueue = [];
+      state.receiving = null;
+      if (state.ws) {
+        const oldWs = state.ws;
+        state.ws = null;
+        oldWs.onclose = null;
+        if (oldWs.readyState === 1) { // WebSocket.OPEN
+          try { oldWs.send(JSON.stringify({ type: 'disconnected' })); } catch (e) {}
+          setTimeout(() => { try { oldWs.close(); } catch(e) {} }, 100);
+        } else {
+          try { oldWs.close(); } catch (e) {}
+        }
+      }
+      if (state.scanner) {
+        try { 
+          state.scanner.stop().catch(()=>{}); 
+          state.scanner.clear();
+        } catch (e) {}
+        state.scanner = null;
+        const qrBox = document.getElementById('qr-reader');
+        if (qrBox) qrBox.style.display = 'none';
+      }
+      state.sessionId = null;
+      state.cryptoKey = null;
+      state.receiving = null;
+      state.sending = null;
+      state.phoneSendQueue = [];
+      clearChatMessages();
+      document.getElementById('status-dot').classList.remove('active');
+      setStatus(false, 'DISCONNECTED');
+      const connSec = document.getElementById('section-connect');
+      const dashSec = document.getElementById('section-dashboard');
+      const transSec = document.getElementById('section-transferring');
+      const inputEl = document.getElementById('session-input');
+      if (connSec) connSec.style.display = 'block';
+      if (dashSec) dashSec.style.display = 'none';
+      if (transSec) transSec.style.display = 'none';
+      if (inputEl) inputEl.value = '';
+    }
+
+    async function handleTextMessage(msg) {
+      if (msg.type === 'folder_request') {
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({
+            type: 'folders',
+            folders: [
+              { id: 'root', name: 'iPhone Downloads', parentId: null },
+              { id: 'photos', name: 'Camera & Photos', parentId: 'root' },
+              { id: 'documents', name: 'Files App', parentId: 'root' }
+            ]
+          }));
+        }
+      } else if (msg.type === 'text_message') {
+        appendChatMessage('PEER', msg.text);
+      } else if (msg.type === 'webrtc_offer') {
+        initWebRTC();
+        await state.rtcPeerConnection.setRemoteDescription(msg.sdp);
+        const answer = await state.rtcPeerConnection.createAnswer();
+        await state.rtcPeerConnection.setLocalDescription(answer);
+        if (state.ws) state.ws.send(JSON.stringify({ type: 'webrtc_answer', sdp: state.rtcPeerConnection.localDescription }));
+      } else if (msg.type === 'webrtc_answer') {
+        if (state.rtcPeerConnection) await state.rtcPeerConnection.setRemoteDescription(msg.sdp);
+      } else if (msg.type === 'webrtc_ice') {
+        if (state.rtcPeerConnection && msg.candidate) {
+          try { await state.rtcPeerConnection.addIceCandidate(msg.candidate); } catch(e) {}
+        }
+      } else if (msg.type === 'transfer_init') {
+        if (state.receiving || state.sending) {
+          state.incomingTransferQueue = state.incomingTransferQueue || [];
+          state.incomingTransferQueue.push(msg);
+          return;
+        }
+
+        state.receiving = {
+          filename: msg.filename || 'received_file',
+          size: typeof msg.size === 'number' ? msg.size : 0,
+          total_chunks: typeof msg.total_chunks === 'number' ? msg.total_chunks : 0,
+          mime_type: msg.mime_type || 'application/octet-stream',
+          chunks: new Array(typeof msg.total_chunks === 'number' ? msg.total_chunks : 0),
+          received: 0
+        };
+        document.getElementById('card-connected').style.display = 'none';
+        document.getElementById('section-transferring').style.display = 'block';
+        document.getElementById('transfer-title').innerText = 'RECEIVING FILE...';
+        document.getElementById('transfer-filename').innerText = state.receiving.filename;
+        updateProgress(0);
+
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'ready' }));
+        }
+      } else if (msg.type === 'ready') {
+        if (state.sending) {
+          streamNextSendingChunk();
+        }
+      } else if (msg.type === 'ack') {
+        if (state.sending) {
+          startSendWatchdog();
+          state.sending.acked++;
+          const pct = Math.round((state.sending.acked / state.sending.total_chunks) * 100);
+          updateProgress(pct);
+          if (state.sending.acked === state.sending.total_chunks) {
+            clearSendWatchdog();
+            state.sending = null;
+            if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {
+              processNextPhoneSend();
+            } else {
+              document.getElementById('section-transferring').style.display = 'none';
+              document.getElementById('card-connected').style.display = 'block';
+            }
+          } else {
+            streamNextSendingChunk();
+          }
+        }
+      } else if (msg.type === 'cancelled') {
+        state.receiving = null;
+        state.sending = null;
+        clearSendWatchdog();
+        if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {
+          processNextPhoneSend();
+        } else {
+          document.getElementById('section-transferring').style.display = 'none';
+          document.getElementById('card-connected').style.display = 'block';
+        }
+      } else if (msg.type === 'disconnected') {
+        disconnectPhoneSession();
+      } else if (msg.type === 'peer_disconnected') {
+        setStatus(false, 'PC DROPPED (WAITING FOR RECONNECT...)');
+      } else if (msg.type === 'paired') {
+        setStatus(true, 'CONNECTED');
+      }
+    }
+
+    async function handleBinaryMessage(data) {
+      const receiving = state.receiving;
+      if (!receiving) return;
+      let buffer = data;
+      if (buffer instanceof Blob) {
+        buffer = await buffer.arrayBuffer();
+      }
+
+      try {
+        const result = await decryptChunk(buffer, state.cryptoKey, receiving.received);
+        if (state.receiving !== receiving) return;
+        const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : 0;
+        receiving.chunks[idx] = result.plaintext;
+        receiving.received++;
+
+        const pct = Math.round((receiving.received / receiving.total_chunks) * 100);
+        updateProgress(pct);
+
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
+        }
+
+        if (receiving.received === receiving.total_chunks && state.receiving === receiving) {
+          finalizeReceivedFile();
+        }
+      } catch (err) {
+        if (state.receiving !== receiving) return;
+        console.error('Decryption failed:', err);
+        state.receiving = null;
+        if (state.receiveWatchdog) {
+          clearTimeout(state.receiveWatchdog);
+          state.receiveWatchdog = null;
+        }
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'cancelled' }));
+        }
+        if (state.incomingTransferQueue && state.incomingTransferQueue.length > 0) {
+          const nextMsg = state.incomingTransferQueue.shift();
+          handleTextMessage(nextMsg);
+        } else if (state.phoneSendQueue && state.phoneSendQueue.length > 0) {
+          processNextPhoneSend();
+        } else {
+          document.getElementById('section-transferring').style.display = 'none';
+          document.getElementById('card-connected').style.display = 'block';
+        }
+        return;
+      }
+
+      if (state.receiveWatchdog) clearTimeout(state.receiveWatchdog);
+      state.receiveWatchdog = setTimeout(() => {
+        if (state.receiving) {
+          console.warn('Receive stalled — resetting');
+          state.receiving = null;
+          state.receiveWatchdog = null;
+          document.getElementById('section-transferring').style.display = 'none';
+          document.getElementById('card-connected').style.display = 'block';
+        }
+      }, 15000);
+    }
+
+    function updateProgress(pct) {
+      document.getElementById('transfer-pct').innerText = \`\${pct}%\`;
+      const fillBar = document.getElementById('transfer-bar');
+      if (fillBar) fillBar.style.width = \`\${pct}%\`;
+      const prog = document.getElementById('transfer-progress');
+      if (prog) prog.value = pct;
+    }
+
+    let fileCounter = 0;
+
+    async function finalizeReceivedFile() {
+      const rec = state.receiving;
+      if (state.receiveWatchdog) {
+        clearTimeout(state.receiveWatchdog);
+        state.receiveWatchdog = null;
+      }
+      document.getElementById('section-transferring').style.display = 'none';
+      document.getElementById('card-connected').style.display = 'block';
+      state.receiving = null;
+      if (state.incomingTransferQueue && state.incomingTransferQueue.length > 0) {
+        const nextMsg = state.incomingTransferQueue.shift();
+        handleTextMessage(nextMsg);
+      }
+
+      const blob = new Blob(rec.chunks, { type: rec.mime_type });
+
+      if (rec.filename === 'message.txt' && rec.size < 50 * 1024) {
+        const text = await blob.text();
+        appendChatMessage('PEER', text);
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const fileId = 'file_' + (++fileCounter);
+      const fileObj = new File([blob], rec.filename, { type: rec.mime_type });
+      
+      const isImage = (rec.mime_type && rec.mime_type.startsWith('image/')) || rec.filename.match(/\\.(jpg|jpeg|png|gif|webp|heic|bmp)\$/i);
+      
+      state.completedFilesMap[fileId] = { url, file: fileObj, filename: rec.filename, mimeType: rec.mime_type, isImage };
+      if (isImage) {
+        state.photoKeys.push(fileId);
+      }
+
+      const list = document.getElementById('completed-files-list');
+      document.getElementById('section-completed').style.display = 'block';
+
+      if (state.photoKeys.length > 0) {
+        const galBtn = document.getElementById('phone-gallery-btn');
+        galBtn.style.display = 'inline-block';
+        galBtn.innerText = \`[ PREVIEW ALL PHOTOS (\${state.photoKeys.length}) ]\`;
+      }
+
+      const div = document.createElement('div');
+      div.className = 'file-item';
+      div.innerHTML = \`
+        <div style="display:flex; align-items:center; overflow:hidden; flex:1;">
+          <div class="file-icon">[ ↓ ]</div>
+          <div style="flex:1; overflow:hidden; padding-right: 8px;">
+            <div class="file-name">\${rec.filename}</div>
+            <div class="file-size">\${formatSize(rec.size)} — READY</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          \${isImage ? \`<button style="padding: 8px 12px; font-size:11px; background:var(--surface); color:#FFF; border: 1px solid var(--border); min-height:36px;" onclick="openPhoneGalleryById('\${fileId}')">[ PREVIEW ]</button>\` : ''}
+          <button style="padding: 8px 12px; font-size:11px; background:#FFFFFF; color:#000000; border: 1px solid var(--border); font-weight:800; min-height:36px;" onclick="shareOrSaveFileById('\${fileId}')">[ SAVE ]</button>
+          <button style="padding: 8px 12px; font-size:11px; background:transparent; color:#EF4444; border: 1px solid #EF4444; font-weight:800; min-height:36px; cursor:pointer;" onclick="deletePhoneFileById('\${fileId}', this)">[ DELETE ]</button>
+        </div>
+      \`;
+      list.prepend(div);
+    }
+
+    function deletePhoneFileById(fileId, btnElement) {
+      if (state.completedFilesMap && state.completedFilesMap[fileId]) {
+        if (state.completedFilesMap[fileId].url) {
+          try { URL.revokeObjectURL(state.completedFilesMap[fileId].url); } catch (e) {}
+        }
+        delete state.completedFilesMap[fileId];
+      }
+      const pIdx = state.photoKeys ? state.photoKeys.indexOf(fileId) : -1;
+      if (pIdx >= 0) {
+        state.photoKeys.splice(pIdx, 1);
+      }
+      if (btnElement) {
+        const item = btnElement.closest('.file-item');
+        if (item) item.remove();
+      }
+      const galBtn = document.getElementById('phone-gallery-btn');
+      if (galBtn) {
+        if (state.photoKeys && state.photoKeys.length > 0) {
+          galBtn.innerText = \`[ PREVIEW ALL PHOTOS (\${state.photoKeys.length}) ]\`;
+        } else {
+          galBtn.style.display = 'none';
+        }
+      }
+      const list = document.getElementById('completed-files-list');
+      if (!list || list.children.length === 0) {
+        const sec = document.getElementById('section-completed');
+        if (sec) sec.style.display = 'none';
+      }
+    }
+
+    function formatSize(bytes) {
+      if (!bytes || bytes <= 0 || isNaN(bytes)) return '0 B';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function openPhoneGalleryById(fileId) {
+      const idx = state.photoKeys.indexOf(fileId);
+      openPhoneGallery(idx >= 0 ? idx : 0);
+    }
+
+    function openPhoneGallery(index) {
+      if (state.photoKeys.length === 0) return;
+      currentPhoneGalleryIndex = index;
+      if (currentPhoneGalleryIndex < 0) currentPhoneGalleryIndex = 0;
+      if (currentPhoneGalleryIndex >= state.photoKeys.length) currentPhoneGalleryIndex = state.photoKeys.length - 1;
+      updatePhoneGalleryView();
+      document.getElementById('phone-lightbox').style.display = 'flex';
+    }
+
+    function updatePhoneGalleryView() {
+      const fileId = state.photoKeys[currentPhoneGalleryIndex];
+      const item = state.completedFilesMap[fileId];
+      if (!item) return;
+
+      document.getElementById('phone-lightbox-title').innerText = item.filename;
+      document.getElementById('phone-lightbox-counter').innerText = \`\${currentPhoneGalleryIndex + 1} / \${state.photoKeys.length}\`;
+      document.getElementById('phone-lightbox-img').src = item.url;
+
+      const strip = document.getElementById('phone-thumb-strip');
+      strip.innerHTML = '';
+      state.photoKeys.forEach((key, i) => {
+        const photo = state.completedFilesMap[key];
+        const img = document.createElement('img');
+        img.className = 'thumb-item' + (i === currentPhoneGalleryIndex ? ' active' : '');
+        img.src = photo.url;
+        img.onclick = () => {
+          currentPhoneGalleryIndex = i;
+          updatePhoneGalleryView();
+        };
+        strip.appendChild(img);
+      });
+    }
+
+    function changePhoneGallery(delta) {
+      if (state.photoKeys.length === 0) return;
+      currentPhoneGalleryIndex += delta;
+      if (currentPhoneGalleryIndex < 0) currentPhoneGalleryIndex = state.photoKeys.length - 1;
+      if (currentPhoneGalleryIndex >= state.photoKeys.length) currentPhoneGalleryIndex = 0;
+      updatePhoneGalleryView();
+    }
+
+    function closePhoneGallery() {
+      document.getElementById('phone-lightbox').style.display = 'none';
+    }
+
+    function saveCurrentPhonePhoto() {
+      const fileId = state.photoKeys[currentPhoneGalleryIndex];
+      if (fileId) shareOrSaveFileById(fileId);
+    }
+
+    function deleteCurrentPhonePhoto() {
+      const fileId = state.photoKeys[currentPhoneGalleryIndex];
+      if (fileId) {
+        deletePhoneFileById(fileId, null);
+        if (state.photoKeys.length > 0) {
+          if (currentPhoneGalleryIndex >= state.photoKeys.length) currentPhoneGalleryIndex = Math.max(0, state.photoKeys.length - 1);
+          openPhoneGalleryById(state.photoKeys[currentPhoneGalleryIndex]);
+        } else {
+          closePhoneGallery();
+        }
+      }
+    }
+
+    async function saveAllPhonePhotos() {
+      if (!state.photoKeys || state.photoKeys.length === 0) return;
+      
+      const btn = document.getElementById('phone-lightbox-save-all');
+      if (btn) { btn.innerText = '[ PROCESSING... ]'; btn.style.pointerEvents = 'none'; }
+      
+      const filesToShare = [];
+      for (const key of state.photoKeys) {
+        const item = (state.completedFilesMap || {})[key];
+        if (item && item.file) filesToShare.push(item.file);
+      }
+      
+      let sharedNative = false;
+      try {
+        if (navigator.canShare && navigator.canShare({ files: filesToShare })) {
+          await navigator.share({ files: filesToShare });
+          sharedNative = true;
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') sharedNative = true;
+      }
+      
+      if (sharedNative) {
+        if (btn) { btn.innerText = '[ SAVE ALL AS ZIP ]'; btn.style.pointerEvents = 'auto'; }
+        return;
+      }
+
+      // Fallback to zip using fflate
+      try {
+        if (btn) { btn.innerText = '[ ZIPPING... ]'; btn.style.pointerEvents = 'none'; }
+        const zipData = {};
+        for (let i = 0; i < filesToShare.length; i++) {
+          const file = filesToShare[i];
+          let filename = file.name || \`file_\${i}\`;
+          while (zipData[filename]) {
+            const parts = filename.split('.');
+            if (parts.length > 1) {
+              const ext = parts.pop();
+              filename = parts.join('.') + \`_\${i}.\` + ext;
+            } else {
+              filename = filename + \`_\${i}\`;
+            }
+          }
+          const buf = await file.arrayBuffer();
+          zipData[filename] = new Uint8Array(buf);
+        }
+        
+        const zipped = window.fflate.zipSync(zipData);
+        const blob = new Blob([zipped], { type: 'application/zip' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        const timestamp = new Date().getTime();
+        a.download = \`LabBridge_Transfer_\${timestamp}.zip\`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to zip files.");
+      } finally {
+        if (btn) { btn.innerText = '[ SAVE ALL AS ZIP ]'; btn.style.pointerEvents = 'auto'; }
+      }
+    }
+
+    async function shareOrSaveFileById(fileId) {
+      const item = (state.completedFilesMap || {})[fileId];
+      if (!item) return;
+      
+      if (navigator.canShare && navigator.canShare({ files: [item.file] })) {
+        try {
+          await navigator.share({
+            files: [item.file]
+          });
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+        }
+      }
+
+      const a = document.createElement('a');
+      a.href = item.url;
+      a.download = item.filename;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function handlePhoneFilesSelected(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+      state.phoneSendQueue = state.phoneSendQueue || [];
+      state.phoneSendQueue.push(...Array.from(files));
+      event.target.value = '';
+      if (!state.sending) {
+        processNextPhoneSend();
+      } else {
+        document.getElementById('transfer-title').innerText = \`SENDING (\${state.phoneSendQueue.length} IN QUEUE)...\`;
+      }
+    }
+
+    function processNextPhoneSend() {
+      if (!state.phoneSendQueue || state.phoneSendQueue.length === 0) {
+        document.getElementById('section-transferring').style.display = 'none';
+        document.getElementById('card-connected').style.display = 'block';
+        state.sending = null;
+        return;
+      }
+      const file = state.phoneSendQueue.shift();
+      
+      const CHUNK_SIZE = 32 * 1024;
+      const total_chunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+
+      state.sending = {
+        file,
+        total_chunks,
+        CHUNK_SIZE,
+        nextIndex: 0,
+        acked: 0
+      };
+
+      document.getElementById('card-connected').style.display = 'none';
+      document.getElementById('section-transferring').style.display = 'block';
+      if (state.phoneSendQueue.length > 0) {
+        document.getElementById('transfer-title').innerText = \`SENDING TO PC (\${state.phoneSendQueue.length} REMAINING)...\`;
+      } else {
+        document.getElementById('transfer-title').innerText = 'SENDING TO PC...';
+      }
+      state.sending.acked = 0;
+      state.sending.nextIndex = 0;
+      state.sending.isProcessing = false;
+      document.getElementById('transfer-filename').innerText = file.name;
+      updateProgress(0);
+
+      if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+        state.ws.send(JSON.stringify({
+          type: 'transfer_init',
+          filename: file.name,
+          size: file.size,
+          total_chunks: total_chunks,
+          mime_type: file.type || 'application/octet-stream'
+        }));
+      }
+    }
+
+    async function streamNextSendingChunk() {
+      const sending = state.sending;
+      if (!sending || sending.isProcessing) return;
+      sending.isProcessing = true;
+
+      try {
+        const usingWebRTC = state.rtcDataChannel && state.rtcDataChannel.readyState === 'open';
+        let maxWindow;
+        if (usingWebRTC) {
+          maxWindow = 256;
+        } else {
+          const sizeMB = (sending.file ? sending.file.size : 0) / (1024 * 1024);
+          if (sizeMB < 10) maxWindow = 64;
+          else if (sizeMB < 50) maxWindow = 32;
+          else maxWindow = 16;
+        }
+        while (state.sending === sending && 
+               sending.nextIndex < sending.total_chunks && 
+               (sending.nextIndex - sending.acked) < maxWindow) {
+          
+          if (!state.ws || state.ws.readyState !== WebSocket.OPEN) break;
+          
+          const chunkIndex = sending.nextIndex;
+          sending.nextIndex++;
+
+          const CHUNK_SIZE = 32 * 1024;
+          const offset = chunkIndex * CHUNK_SIZE;
+          const slice = sending.file.slice(offset, offset + CHUNK_SIZE);
+
+          try {
+            const ab = await slice.arrayBuffer();
+            const encrypted = await encryptChunk(ab, state.cryptoKey, chunkIndex);
+            if (!state.sending || !state.ws || state.ws.readyState !== WebSocket.OPEN) break;
+            
+            if (state.rtcDataChannel && state.rtcDataChannel.readyState === 'open') {
+              state.rtcDataChannel.send(encrypted);
+            } else {
+              state.ws.send(encrypted);
+            }
+          } catch(err) {
+            console.error('Chunk encrypt/send error:', err);
+            break;
+          }
+        }
+      } finally {
+        if (state.sending === sending) {
+          sending.isProcessing = false;
+          const usingWebRTC2 = state.rtcDataChannel && state.rtcDataChannel.readyState === 'open';
+          const mw = usingWebRTC2 ? 256 : ((sending.file ? sending.file.size : 0) / (1024 * 1024) < 10 ? 64 : (sending.file ? sending.file.size : 0) / (1024 * 1024) < 50 ? 32 : 16);
+          if ((sending.nextIndex - sending.acked) < mw && sending.nextIndex < sending.total_chunks) {
+            streamNextSendingChunk();
+          }
+        }
+      }
+    }
+
+    // Watchdog: if sending stalls for >10 seconds, reset and show error
+    function startSendWatchdog() {
+      if (state.sendWatchdog) clearTimeout(state.sendWatchdog);
+      state.sendWatchdog = setTimeout(() => {
+        if (state.sending && state.sending.acked < state.sending.total_chunks) {
+          console.warn('Send stalled — resetting');
+          state.sending = null;
+          document.getElementById('section-transferring').style.display = 'none';
+          document.getElementById('card-connected').style.display = 'block';
+          alert('Transfer stalled. Please try again.');
+        }
+      }, 10000);
+    }
+
+    function clearSendWatchdog() {
+      if (state.sendWatchdog) {
+        clearTimeout(state.sendWatchdog);
+        state.sendWatchdog = null;
+      }
+    }
+
+    function cancelTransfer() {
+      if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+        state.ws.send(JSON.stringify({ type: 'cancelled' }));
+      }
+      document.getElementById('section-transferring').style.display = 'none';
+      document.getElementById('card-connected').style.display = 'block';
+      state.receiving = null;
+      state.sending = null;
+    }
+
+    async function toggleScanner() {
+      const box = document.getElementById('qr-reader');
+      if (box.style.display === 'block') {
+        if (state.scanner) {
+          try { await state.scanner.stop(); } catch(e){}
+        }
+        box.style.display = 'none';
+        return;
+      }
+
+      // Check if camera API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera access is not available in this browser/context. Try opening DocTransit in Safari instead of the PWA, or manually enter the session ID.');
+        return;
+      }
+
+      box.style.display = 'block';
+
+      // Stop any existing scanner before creating a new one
+      if (state.scanner) {
+        try { await state.scanner.stop(); } catch(e){}
+        state.scanner = null;
+      }
+
+      try {
+        // Clear the container to avoid stale DOM issues
+        box.innerHTML = '';
+        state.scanner = new Html5Qrcode('qr-reader');
+
+        await state.scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText) => {
+            if (state.scanner) {
+              try { state.scanner.stop(); } catch(e){}
+              document.getElementById('qr-reader').style.display = 'none';
+            }
+            try {
+              const uri = new URL(decodedText);
+              const s = uri.searchParams.get('s');
+              if (s && s.length === 12) {
+                connectToSession(s);
+                return;
+              }
+            } catch(e){}
+
+            try {
+              const data = JSON.parse(decodedText);
+              if (data.s && data.s.length === 12) {
+                connectToSession(data.s);
+                return;
+              }
+            } catch(e){}
+
+            if (decodedText && decodedText.length === 12) {
+              connectToSession(decodedText);
+            }
+          },
+          (errorMessage) => {}
+        );
+      } catch (err) {
+        console.error('[DocTransit] Scanner error:', err);
+        box.style.display = 'none';
+        state.scanner = null;
+        alert('Camera error: ' + (err.message || err) + '\\n\\nTip: If using PWA, try opening in Safari. Or enter the session ID manually.');
+      }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && state.scanner) {
+        try { state.scanner.stop(); } catch(e){}
+        document.getElementById('qr-reader').style.display = 'none';
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+
+    let unreadChatCount = 0;
+
+    function openChatModal() {
+      state.chatModalOpen = true;
+      document.getElementById('chat-modal').style.display = 'flex';
+      unreadChatCount = 0;
+      updateChatBadges();
+      const input = document.getElementById('chat-modal-input');
+      if (input) { input.focus(); input.style.height = '44px'; }
+      const container = document.getElementById('chat-modal-messages');
+      if (container) container.scrollTop = container.scrollHeight;
+    }
+
+    function closeChatModal() {
+      state.chatModalOpen = false;
+      document.getElementById('chat-modal').style.display = 'none';
+    }
+
+    function clearChatMessages() {
+      unreadChatCount = 0;
+      updateChatBadges();
+      closeChatModal();
+      const list = document.getElementById('chat-modal-messages');
+      if (list) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.id = 'chat-empty-state';
+        emptyDiv.style.cssText = 'margin: auto; color: var(--text-3); font-family: var(--mono); font-size: 12px; text-align: center; padding: 20px;';
+        emptyDiv.innerText = 'No messages in this session yet.';
+        list.innerHTML = '';
+        list.appendChild(emptyDiv);
+      }
+    }
+
+    function updateChatBadges() {
+      const badge = document.getElementById('phone-chat-badge');
+      if (badge) {
+        if (unreadChatCount > 0) {
+          badge.style.display = 'inline-block';
+          badge.innerText = \`\${unreadChatCount} NEW\`;
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    }
+
+    function appendChatMessage(sender, text) {
+      const emptyState = document.getElementById('chat-empty-state');
+      if (emptyState) emptyState.remove();
+
+      const list = document.getElementById('chat-modal-messages');
+      if (!list) return;
+
+      const isMe = sender === 'YOU';
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.alignItems = isMe ? 'flex-end' : 'flex-start';
+      wrapper.style.width = '100%';
+
+      const tag = document.createElement('span');
+      tag.style.fontFamily = 'var(--mono)';
+      tag.style.fontSize = '10px';
+      tag.style.color = 'var(--text-3)';
+      tag.style.marginBottom = '4px';
+      tag.innerText = isMe ? '[ YOU ]' : '[ PEER ]';
+
+      const msgDiv = document.createElement('div');
+      msgDiv.style.cssText = 'padding: 8px 12px; font-family: var(--mono); font-size: 13px; color: #FFFFFF; white-space: pre-wrap; max-width: 85%; word-break: break-word;';
+      msgDiv.style.background = isMe ? 'var(--surface-2)' : '#18181B';
+      msgDiv.style.border = isMe ? '1px solid var(--border)' : '1px solid #3F3F46';
+      msgDiv.textContent = text;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.innerText = '[ COPY ]';
+      copyBtn.style.cssText = 'margin-top: 2px; background: transparent; border: none; color: var(--text-3); font-size: 9px; font-family: var(--mono); cursor: pointer; padding: 0;';
+      copyBtn.onclick = (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(text);
+        copyBtn.innerText = '[ COPIED! ]';
+        setTimeout(() => { copyBtn.innerText = '[ COPY ]'; }, 1500);
+      };
+
+      wrapper.appendChild(tag);
+      wrapper.appendChild(msgDiv);
+      wrapper.appendChild(copyBtn);
+      list.appendChild(wrapper);
+
+      list.scrollTop = list.scrollHeight;
+
+      if (!state.chatModalOpen && !isMe) {
+        unreadChatCount++;
+        updateChatBadges();
+      }
+    }
+
+    function sendModalChatMessage() {
+      const input = document.getElementById('chat-modal-input');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+
+      if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+        state.ws.send(JSON.stringify({ type: 'text_message', text: text }));
+        appendChatMessage('YOU', text);
+      }
+      input.value = '';
+    }
+  </script>
+</body>
+</html>
+`;

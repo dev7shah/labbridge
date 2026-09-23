@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>DocTransit — Terminal & PWA</title>
+  <title>DocTransit — Seamless File Transfer</title>
+  <meta name="description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
   <meta property="og:title" content="DocTransit">
-  <meta property="og:description" content="Zero-cloud P2P encrypted file transfer for your local network and beyond.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg">
+  <meta property="og:description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
+  <meta property="og:image" content="https://doctransit.in/preview.jpg">
   <meta property="og:url" content="https://doctransit.in/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/icon.png" />
@@ -847,7 +848,7 @@
               <a href="install.html" style="background: #FFFFFF; color: #000000; padding: 6px 14px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;">[ GET MOBILE APP / APK ]</a>
             </div>
             <p style="font-size: 14px; color: var(--text-2); line-height: 1.6; font-family: var(--mono);">
-              DocTransit is a serverless, zero-install peer-to-peer file transfer utility for rapid data movement between desktop terminals and mobile devices.
+              DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.
             </p>
             <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: var(--text-2); font-family: var(--mono); border-top: 1px solid var(--border); padding-top: 16px;">
               <div>• <strong style="color: #FFFFFF;">ZERO CLOUD STORAGE:</strong> Files stream directly between devices via WebSocket memory relay without server caching.</div>
@@ -1001,7 +1002,7 @@
     </header>
 
     <!-- Permanent Android APK Button -->
-    <a id="android-apk-btn" href="doctransit-app.apk" download="doctransit-app.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
+    <a id="android-apk-btn" href="https://github.com/dev7shah/labbridge/releases/latest/download/doctransit.apk" download="doctransit.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
       [ DOWNLOAD NATIVE ANDROID APK ]
     </a>
 
@@ -2043,7 +2044,7 @@
 
     function initiateSendFile(file) {
       if (state.phase !== 'paired' && state.phase !== 'transferring') return;
-      const totalChunks = Math.max(1, Math.ceil(file.size / (512 * 1024)));
+      const totalChunks = Math.max(1, Math.ceil(file.size / (32 * 1024)));
       
       state.currentTransfer = {
         direction: 'sending',
@@ -2082,18 +2083,29 @@
       transfer.isProcessing = true;
 
       try {
-        // Send up to 16 chunks ahead of the last received ACK
+        // Adaptive send-ahead window: WebRTC is direct so use large window,
+        // relay mode scales down based on file size to prevent buffer overflow
+        const usingWebRTC = state.rtcDataChannel && state.rtcDataChannel.readyState === 'open';
+        let maxWindow;
+        if (usingWebRTC) {
+          maxWindow = 256;
+        } else {
+          const sizeMB = transfer.size / (1024 * 1024);
+          if (sizeMB < 10) maxWindow = 64;
+          else if (sizeMB < 50) maxWindow = 32;
+          else maxWindow = 16;
+        }
         while (state.currentTransfer === transfer && 
                transfer.nextIndex < transfer.total_chunks && 
-               (transfer.nextIndex - transfer.sentChunks) < 16) {
+               (transfer.nextIndex - transfer.sentChunks) < maxWindow) {
           
           const chunkIndex = transfer.nextIndex;
           transfer.nextIndex++;
           
           let arrayBuffer, encrypted;
           try {
-            const offset = chunkIndex * 512 * 1024;
-            const slice = transfer.file.slice(offset, offset + 512 * 1024);
+            const offset = chunkIndex * 32 * 1024;
+            const slice = transfer.file.slice(offset, offset + 32 * 1024);
             arrayBuffer = await slice.arrayBuffer();
             encrypted = await encryptChunk(arrayBuffer, state.cryptoKey, chunkIndex);
           } catch (err) {
@@ -2112,7 +2124,9 @@
             return;
           }
 
-          if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          if (state.rtcDataChannel && state.rtcDataChannel.readyState === 'open') {
+            state.rtcDataChannel.send(encrypted);
+          } else if (state.ws && state.ws.readyState === WebSocket.OPEN) {
             state.ws.send(encrypted);
           }
           
@@ -2138,7 +2152,7 @@
         if (state.currentTransfer === transfer) {
           transfer.isProcessing = false;
           // If window opened up while processing, continue
-          if ((transfer.nextIndex - transfer.sentChunks) < 16 && transfer.nextIndex < transfer.total_chunks) {
+          if ((transfer.nextIndex - transfer.sentChunks) < 256 && transfer.nextIndex < transfer.total_chunks) {
             streamNextSendingChunk();
           }
         }
@@ -2849,7 +2863,7 @@
       };
     }
 
-    function phoneHandleTextMessage(msg) {
+    async function phoneHandleTextMessage(msg) {
       if (msg.type === 'paired') {
         phoneSetStatus(true, 'CONNECTED TO PC TERMINAL');
       } else if (msg.type === 'ready') {
@@ -2998,7 +3012,7 @@
     }
 
     function phoneInitiateSendFile(file) {
-      const totalChunks = Math.max(1, Math.ceil(file.size / (512 * 1024)));
+      const totalChunks = Math.max(1, Math.ceil(file.size / (32 * 1024)));
       phoneState.currentTransfer = {
         direction: 'sending',
         file: file,
@@ -3037,17 +3051,27 @@
       transfer.isProcessing = true;
 
       try {
+        const usingWebRTC = phoneState.rtcDataChannel && phoneState.rtcDataChannel.readyState === 'open';
+        let maxWindow;
+        if (usingWebRTC) {
+          maxWindow = 256;
+        } else {
+          const sizeMB = transfer.size / (1024 * 1024);
+          if (sizeMB < 10) maxWindow = 64;
+          else if (sizeMB < 50) maxWindow = 32;
+          else maxWindow = 16;
+        }
         while (phoneState.currentTransfer === transfer &&
                transfer.nextIndex < transfer.total_chunks &&
-               (transfer.nextIndex - transfer.sentChunks) < 16) {
+               (transfer.nextIndex - transfer.sentChunks) < maxWindow) {
 
           const chunkIndex = transfer.nextIndex;
           transfer.nextIndex++;
 
           let arrayBuffer, encrypted;
           try {
-            const offset = chunkIndex * 512 * 1024;
-            const slice = transfer.file.slice(offset, offset + 512 * 1024);
+            const offset = chunkIndex * 32 * 1024;
+            const slice = transfer.file.slice(offset, offset + 32 * 1024);
             arrayBuffer = await slice.arrayBuffer();
             encrypted = await encryptChunk(arrayBuffer, phoneState.cryptoKey, chunkIndex);
           } catch (err) {
@@ -3065,7 +3089,9 @@
             return;
           }
 
-          if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+          if (phoneState.rtcDataChannel && phoneState.rtcDataChannel.readyState === 'open') {
+            phoneState.rtcDataChannel.send(encrypted);
+          } else if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
             phoneState.ws.send(encrypted);
           }
 
@@ -3089,7 +3115,7 @@
       } finally {
         if (phoneState.currentTransfer === transfer) {
           transfer.isProcessing = false;
-          if ((transfer.nextIndex - transfer.sentChunks) < 16 && transfer.nextIndex < transfer.total_chunks) {
+          if ((transfer.nextIndex - transfer.sentChunks) < 256 && transfer.nextIndex < transfer.total_chunks) {
             phoneStreamNextSendingChunk();
           }
         }

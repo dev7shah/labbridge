@@ -1,1 +1,3307 @@
-export const INDEX_HTML = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\" />\n  <title>DocTransit — Terminal & PWA</title>\n  <meta property=\"og:title\" content=\"DocTransit\">\n  <meta property=\"og:description\" content=\"Zero-cloud P2P encrypted file transfer for your local network and beyond.\">\n  <meta property=\"og:image\" content=\"https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg\">\n  <meta property=\"og:url\" content=\"https://doctransit.in/\">\n  <meta name=\"twitter:card\" content=\"summary_large_image\">\n  <link rel=\"icon\" type=\"image/png\" href=\"/icon.png\" />\n  <script src=\"/fflate.min.js\"></script>\n  <link rel=\"manifest\" href=\"manifest.json\" />\n  <meta name=\"theme-color\" content=\"#000000\" />\n  <meta name=\"apple-mobile-web-app-capable\" content=\"yes\" />\n  <meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\" />\n  <meta name=\"apple-mobile-web-app-title\" content=\"DocTransit\" />\n  <script src=\"qr.min.js\"></script>\n  <script src=\"jsQR.min.js\"></script>\n  <style>\n    :root {\n      --bg:           #000000;\n      --surface:      #09090B;\n      --surface-2:    #121214;\n      --border:       #27272A;\n      --border-hover: #FFFFFF;\n      --primary:      #FFFFFF;\n      --primary-dim:  #18181B;\n      --red:          #EF4444;\n      --text:         #FFFFFF;\n      --text-2:       #A1A1AA;\n      --text-3:       #52525B;\n      --mono:         'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;\n    }\n\n    * {\n      box-sizing: border-box;\n      margin: 0;\n      padding: 0;\n      -webkit-tap-highlight-color: transparent;\n    }\n\n    body {\n      background: var(--bg);\n      color: var(--text);\n      font-family: var(--mono);\n      min-height: 100vh;\n      display: flex;\n      flex-direction: column;\n      padding: 0;\n      margin: 0;\n    }\n\n    .container {\n      width: 100%;\n      min-height: 100vh;\n      max-width: 100%;\n      background: #000000;\n      border: none;\n      border-radius: 0;\n      padding: 32px 48px;\n      display: flex;\n      flex-direction: column;\n      flex: 1;\n      gap: 24px;\n    }\n\n    @media (max-width: 992px) {\n      .container {\n        padding: 24px;\n        gap: 20px;\n      }\n      .qr-box {\n        padding: 16px !important;\n      }\n      #qrcode {\n        width: 220px !important;\n        height: 220px !important;\n      }\n    }\n    @media (max-width: 600px) {\n      .container {\n        padding: 16px;\n        gap: 16px;\n      }\n    }\n\n    header {\n      display: flex;\n      align-items: center;\n      justify-content: space-between;\n      padding-bottom: 24px;\n      border-bottom: 1px solid var(--border);\n    }\n\n    .brand {\n      display: flex;\n      align-items: center;\n      gap: 16px;\n    }\n\n    .brand img {\n      width: 44px;\n      height: 44px;\n      border-radius: 0;\n      border: 1px solid var(--border);\n    }\n\n    .brand-name {\n      font-family: var(--mono);\n      font-size: 24px;\n      font-weight: 800;\n      color: var(--text);\n      letter-spacing: -0.5px;\n    }\n\n    .brand-sub {\n      font-size: 14px;\n      color: var(--text-3);\n      margin-top: 4px;\n      font-family: var(--mono);\n    }\n\n    .status-pill {\n      display: inline-flex;\n      align-items: center;\n      gap: 10px;\n      padding: 10px 18px;\n      border-radius: 0;\n      border: 1px solid var(--border);\n      background: var(--surface-2);\n      font-family: var(--mono);\n      font-size: 14px;\n      font-weight: 700;\n      color: var(--text-2);\n    }\n\n    .status-dot {\n      width: 8px;\n      height: 8px;\n      border-radius: 0;\n      background: var(--text-3);\n      flex-shrink: 0;\n    }\n\n    .status-dot.active {\n      background: #FFFFFF;\n      box-shadow: 0 0 8px #FFFFFF;\n    }\n\n    .btn-disconnect {\n      background: transparent;\n      border: 1px solid var(--border);\n      color: #EF4444;\n      font-family: var(--mono);\n      font-size: 13px;\n      font-weight: 700;\n      cursor: pointer;\n      padding: 8px 16px;\n      text-transform: uppercase;\n    }\n\n    .btn-disconnect:hover {\n      border-color: #EF4444;\n      background: rgba(239, 68, 68, 0.1);\n    }\n\n    /* Phase 1: Waiting */\n    #phase-waiting {\n      display: flex;\n      flex-direction: column;\n      width: 100%;\n      flex: 1;\n    }\n\n    .phase-label {\n      font-family: var(--mono);\n      font-size: 16px;\n      font-weight: 800;\n      letter-spacing: 3px;\n      color: var(--text-3);\n      text-align: center;\n      margin-bottom: 24px;\n      text-transform: uppercase;\n    }\n\n    .qr-wrap {\n      display: flex;\n      justify-content: center;\n      margin-bottom: 28px;\n    }\n\n    .qr-box {\n      background: #FFFFFF;\n      padding: 24px;\n      border-radius: 0;\n      border: 1px solid var(--border);\n      position: relative;\n      display: inline-flex;\n      align-items: center;\n      justify-content: center;\n    }\n\n    #qrcode {\n      width: 260px;\n      height: 260px;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n    }\n\n    #qrcode img, #qrcode canvas {\n      display: block;\n      width: 100% !important;\n      height: 100% !important;\n      max-width: 260px;\n      max-height: 260px;\n    }\n\n    .qr-expired-overlay {\n      display: none;\n      position: absolute;\n      inset: 0;\n      background: rgba(0, 0, 0, 0.95);\n      border-radius: 0;\n      flex-direction: column;\n      align-items: center;\n      justify-content: center;\n      gap: 12px;\n      z-index: 10;\n      border: 1px solid var(--border);\n    }\n\n    .expired-text {\n      font-family: var(--mono);\n      font-size: 13px;\n      font-weight: 800;\n      color: #FFFFFF;\n    }\n\n    .btn-refresh-qr {\n      background: #FFFFFF;\n      color: #000000;\n      border: 1px solid var(--border);\n      padding: 8px 16px;\n      border-radius: 0;\n      font-family: var(--mono);\n      font-size: 12px;\n      font-weight: 800;\n      cursor: pointer;\n      text-transform: uppercase;\n    }\n\n    .steps {\n      display: flex;\n      flex-direction: column;\n      gap: 12px;\n      margin-bottom: 24px;\n      padding: 0 4px;\n    }\n\n    .step {\n      display: flex;\n      align-items: baseline;\n      gap: 12px;\n    }\n\n    .step-num {\n      font-family: var(--mono);\n      font-size: 11px;\n      font-weight: 800;\n      color: #FFFFFF;\n      flex-shrink: 0;\n      width: 24px;\n    }\n\n    .step-text {\n      font-size: 13px;\n      color: var(--text-2);\n      line-height: 1.4;\n      font-family: var(--mono);\n    }\n\n    .session-meta {\n      display: flex;\n      align-items: center;\n      justify-content: space-between;\n      padding-top: 16px;\n      border-top: 1px solid var(--border);\n      font-family: var(--mono);\n      font-size: 11px;\n      color: var(--text-3);\n      flex-wrap: wrap;\n      gap: 10px;\n    }\n\n    .mono-accent {\n      font-family: var(--mono);\n      color: #FFFFFF;\n      font-weight: 700;\n    }\n\n    .btn-text {\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      color: #FFFFFF;\n      font-family: var(--mono);\n      font-size: 11px;\n      font-weight: 700;\n      cursor: pointer;\n      padding: 6px 12px;\n      border-radius: 0;\n      text-transform: uppercase;\n    }\n\n    .btn-text:hover {\n      border-color: #FFFFFF;\n    }\n\n    /* Phase 2: Paired */\n    #phase-paired {\n      display: none;\n      flex-direction: column;\n      gap: 16px;\n      width: 100%;\n    }\n\n    #received-files-section {\n      padding: 16px;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      border-radius: 0;\n    }\n\n    .folder-section {\n      padding: 16px;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      border-radius: 0;\n    }\n\n    .section-label {\n      font-family: var(--mono);\n      font-size: 11px;\n      font-weight: 800;\n      letter-spacing: 1px;\n      color: var(--text-3);\n      text-transform: uppercase;\n      margin-bottom: 12px;\n    }\n\n    .breadcrumb {\n      display: flex;\n      align-items: center;\n      flex-wrap: wrap;\n      gap: 6px;\n      font-family: var(--mono);\n      font-size: 12px;\n      color: var(--text-3);\n      margin-bottom: 12px;\n    }\n\n    .breadcrumb-item {\n      color: #FFFFFF;\n      cursor: pointer;\n      font-weight: 700;\n    }\n\n    .breadcrumb-item:hover { text-decoration: underline; }\n\n    .breadcrumb-sep { color: var(--text-3); }\n\n    .folder-grid {\n      display: flex;\n      flex-wrap: wrap;\n      gap: 8px;\n      min-height: 40px;\n    }\n\n    .folder-btn {\n      background: var(--surface);\n      border: 1px solid var(--border);\n      color: var(--text);\n      padding: 8px 14px;\n      border-radius: 0;\n      font-size: 12px;\n      font-family: var(--mono);\n      font-weight: 700;\n      cursor: pointer;\n      transition: border-color 0.15s;\n    }\n\n    .folder-btn:hover {\n      border-color: #FFFFFF;\n      background: var(--surface-2);\n    }\n\n    .dropzone {\n      border: 1px dashed var(--border);\n      border-radius: 0;\n      padding: 44px 20px;\n      text-align: center;\n      cursor: pointer;\n      transition: all 0.2s;\n      position: relative;\n      background: var(--surface-2);\n    }\n\n    .dropzone:hover, .dropzone.dragover {\n      border-color: #FFFFFF;\n      background: var(--surface);\n    }\n\n    .dropzone p {\n      font-family: var(--mono);\n      font-size: 14px;\n      font-weight: 800;\n      color: var(--text);\n      margin-bottom: 6px;\n    }\n\n    .dropzone span {\n      font-size: 11px;\n      color: var(--text-3);\n      font-family: var(--mono);\n    }\n\n    .dropzone input[type=\"file\"] {\n      position: absolute;\n      inset: 0;\n      opacity: 0;\n      cursor: pointer;\n      width: 100%;\n      height: 100%;\n    }\n\n    .dropzone-icon {\n      font-size: 20px;\n      color: var(--text);\n      margin-bottom: 12px;\n      font-family: var(--mono);\n      font-weight: 800;\n    }\n\n    /* Phase 3: Transferring */\n    #phase-transferring {\n      display: none;\n      flex-direction: column;\n      gap: 14px;\n      width: 100%;\n      padding: 16px;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      border-radius: 0;\n    }\n\n    .transfer-info {\n      display: flex;\n      justify-content: space-between;\n      align-items: baseline;\n      font-family: var(--mono);\n      font-size: 13px;\n      font-weight: 700;\n    }\n\n    #transfer-filename { color: var(--text); }\n    #transfer-size { font-size: 11px; color: var(--text-3); margin-top: 3px; font-family: var(--mono); }\n    #transfer-pct { color: #FFFFFF; font-weight: 800; }\n\n    .progress-track {\n      width: 100%;\n      height: 2px;\n      background: var(--surface);\n      border-radius: 0;\n      overflow: hidden;\n      border: 1px solid var(--border);\n    }\n\n    .progress-fill {\n      height: 100%;\n      background: #FFFFFF;\n      width: 0%;\n      transition: width 0.1s linear;\n    }\n\n    .btn-cancel {\n      background: transparent;\n      border: 1px solid var(--border);\n      color: #EF4444;\n      font-family: var(--mono);\n      font-size: 11px;\n      font-weight: 700;\n      cursor: pointer;\n      padding: 6px 12px;\n      align-self: flex-start;\n      border-radius: 0;\n      text-transform: uppercase;\n    }\n\n    .btn-cancel:hover {\n      border-color: #EF4444;\n    }\n\n    /* Phase 4: Done */\n    #phase-done {\n      display: none;\n      flex-direction: column;\n      align-items: center;\n      text-align: center;\n      gap: 16px;\n      padding: 24px 0;\n      width: 100%;\n    }\n\n    .done-icon {\n      width: 48px;\n      height: 48px;\n      border-radius: 0;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      font-family: var(--mono);\n      font-size: 20px;\n      font-weight: 800;\n      color: #FFFFFF;\n    }\n\n    #done-message {\n      font-family: var(--mono);\n      font-size: 15px;\n      font-weight: 800;\n      color: var(--text);\n    }\n\n    #done-subtext {\n      font-size: 12px;\n      color: var(--text-3);\n      margin-top: 4px;\n      font-family: var(--mono);\n    }\n\n    .btn-reset {\n      background: #FFFFFF;\n      border: 1px solid var(--border);\n      color: #000000;\n      padding: 12px 24px;\n      border-radius: 0;\n      font-size: 12px;\n      font-family: var(--mono);\n      font-weight: 800;\n      cursor: pointer;\n      text-transform: uppercase;\n    }\n\n    .btn-reset:hover {\n      opacity: 0.9;\n    }\n\n    /* Phone mode styles inside index.html */\n    #phone-mode-container.container {\n      max-width: none;\n      border-radius: 0;\n      border: 1px solid var(--border);\n      background: var(--surface);\n      box-shadow: none;\n      padding: 24px;\n    }\n\n    #phone-mode-container input[type=\"text\"] {\n      width: 100%;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      border-radius: 0;\n      padding: 12px 14px;\n      color: var(--text);\n      font-family: var(--mono);\n      font-size: 13px;\n      outline: none;\n      transition: border-color 0.15s;\n    }\n    #phone-mode-container input[type=\"text\"]:focus { border-color: #FFFFFF; }\n\n    #phone-mode-container button {\n      width: 100%;\n      background: #FFFFFF;\n      color: #000000;\n      border: 1px solid var(--border);\n      border-radius: 0;\n      padding: 14px;\n      font-family: var(--mono);\n      font-size: 12px;\n      font-weight: 800;\n      cursor: pointer;\n      letter-spacing: 0.5px;\n      text-transform: uppercase;\n    }\n    #phone-mode-container button:active { opacity: 0.8; }\n    #phone-mode-container button.secondary {\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      color: var(--text);\n    }\n\n    /* Chat Modal & Responsive Mobile Optimization */\n    #chat-modal {\n      display: none;\n      position: fixed;\n      inset: 0;\n      background: rgba(0, 0, 0, 0.4);\n      backdrop-filter: blur(4px);\n      z-index: 99999;\n      align-items: center;\n      justify-content: center;\n      padding: 16px;\n    }\n    .chat-modal-box {\n      background: #000000;\n      width: 100%;\n      max-width: 400px;\n      height: 90vh;\n      max-height: 600px;\n      display: flex;\n      flex-direction: column;\n      border: 1px solid #2C2C2E;\n      border-radius: 12px;\n      overflow: hidden;\n      box-shadow: 0 20px 40px rgba(0,0,0,0.5);\n    }\n    .chat-modal-header {\n      padding: 16px;\n      border-bottom: 1px solid #2C2C2E;\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      background: rgba(18, 18, 18, 0.85);\n      backdrop-filter: blur(10px);\n      -webkit-backdrop-filter: blur(10px);\n      gap: 12px;\n    }\n    .chat-modal-messages {\n      flex: 1;\n      padding: 16px;\n      overflow-y: auto;\n      display: flex;\n      flex-direction: column;\n      gap: 12px;\n      background: #000000;\n    }\n    .chat-modal-footer {\n      padding: 12px 16px;\n      border-top: 1px solid #2C2C2E;\n      background: #121212;\n      display: flex;\n      gap: 10px;\n      align-items: center;\n      width: 100%;\n      box-sizing: border-box;\n    }\n\n    @media (max-width: 640px) {\n      #chat-modal {\n        padding: 0;\n      }\n      .chat-modal-box {\n        max-width: 100%;\n        height: 100%;\n        max-height: 100dvh;\n        border: none;\n      }\n      .chat-modal-header {\n        padding: 16px;\n        padding-top: max(16px, env(safe-area-inset-top));\n      }\n      .chat-modal-footer {\n        padding: 12px;\n        padding-bottom: max(12px, env(safe-area-inset-bottom));\n      }\n    }\n\n    /* Lightbox Modal */\n    #photo-lightbox {\n      display: none;\n      position: fixed;\n      inset: 0;\n      background: rgba(0, 0, 0, 0.96);\n      z-index: 9999;\n      flex-direction: column;\n      justify-content: space-between;\n      padding: 24px;\n      border: 1px solid var(--border);\n    }\n\n    .lightbox-header {\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      border-bottom: 1px solid var(--border);\n      padding-bottom: 16px;\n      width: 100%;\n    }\n\n    .lightbox-img-wrap {\n      flex: 1;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      position: relative;\n      width: 100%;\n      overflow: hidden;\n      margin: 16px 0;\n    }\n\n    .lightbox-img-wrap img {\n      max-width: 85vw;\n      max-height: 72vh;\n      object-fit: contain;\n      border: 1px solid var(--border);\n    }\n\n    .lightbox-btn {\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      color: #FFFFFF;\n      padding: 8px 16px;\n      border-radius: 0;\n      font-family: var(--mono);\n      font-size: 12px;\n      font-weight: 800;\n      cursor: pointer;\n      text-decoration: none;\n      display: inline-flex;\n      align-items: center;\n      gap: 6px;\n      text-transform: uppercase;\n    }\n\n    .lightbox-btn:hover { border-color: #FFFFFF; }\n\n    .lightbox-btn.primary {\n      background: #FFFFFF;\n      color: #000000;\n    }\n\n    .lightbox-nav-btn {\n      background: var(--surface);\n      border: 1px solid var(--border);\n      color: #FFFFFF;\n      width: 48px;\n      height: 48px;\n      border-radius: 0;\n      font-size: 18px;\n      font-weight: 800;\n      cursor: pointer;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      position: absolute;\n      top: 50%;\n      transform: translateY(-50%);\n      z-index: 10;\n    }\n\n    .lightbox-nav-btn:hover { border-color: #FFFFFF; }\n    .lightbox-nav-btn.left { left: 16px; }\n    .lightbox-nav-btn.right { right: 16px; }\n\n    .thumb-strip {\n      display: flex;\n      gap: 8px;\n      overflow-x: auto;\n      padding: 12px 0;\n      border-top: 1px solid var(--border);\n      width: 100%;\n    }\n\n    .thumb-item {\n      width: 56px;\n      height: 56px;\n      border: 1px solid var(--border);\n      background: var(--surface);\n      cursor: pointer;\n      object-fit: cover;\n      flex-shrink: 0;\n    }\n\n    .thumb-item.active {\n      border: 2px solid #FFFFFF;\n    }\n\n    footer {\n      margin-top: 28px;\n      text-align: center;\n    }\n\n    .made-by-badge {\n      display: inline-flex;\n      align-items: center;\n      gap: 8px;\n      padding: 10px 18px;\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      color: var(--text);\n      font-family: var(--mono);\n      font-size: 14px;\n      font-weight: 800;\n      text-decoration: none;\n      transition: border-color 0.15s;\n    }\n\n    .made-by-badge:hover {\n      border-color: #FFFFFF;\n    }\n  </style>\n</head>\n<body>\n  <!-- PC Mode Container -->\n  <div id=\"pc-mode-container\" class=\"container\">\n    <header>\n      <div class=\"brand\">\n        <img src=\"logo.png\" alt=\"DocTransit Logo\" />\n        <div>\n          <div class=\"brand-name\">DOCTRANSIT TERMINAL</div>\n          <div class=\"brand-sub\">[ E2E ENCRYPTED · ZERO CLOUD ]</div>\n        </div>\n      </div>\n      <div style=\"display: flex; align-items: center; gap: 16px; flex-wrap: wrap;\">\n        <a href=\"https://github.com/dev7shah\" target=\"_blank\" class=\"made-by-badge\">MADE BY DEV7SHAH</a>\n        <div class=\"status-pill\">\n          <div id=\"status-dot\" class=\"status-dot\"></div>\n          <span id=\"status-text\">DISCONNECTED</span>\n          <button id=\"btn-disconnect\" class=\"btn-disconnect\" style=\"display:none;\" onclick=\"disconnectSession()\">[ DISCONNECT ]</button>\n        </div>\n      </div>\n    </header>\n\n    <!-- Phase 1: Waiting -->\n    <div id=\"phase-waiting\" style=\"width: 100%;\">\n      <div style=\"display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; align-items: stretch; width: 100%;\">\n        <!-- Left Column: Specs, Onboarding & Instructions -->\n        <div style=\"display: flex; flex-direction: column; justify-content: space-between; gap: 24px; background: var(--surface-2); border: 1px solid var(--border); padding: 28px;\">\n          <div style=\"display: flex; flex-direction: column; gap: 16px;\">\n            <div style=\"display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;\">\n              <span style=\"font-size: 13px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;\">[ WHAT IS DOCTRANSIT? ]</span>\n              <a href=\"install.html\" style=\"background: #FFFFFF; color: #000000; padding: 6px 14px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;\">[ GET MOBILE APP / APK ]</a>\n            </div>\n            <p style=\"font-size: 14px; color: var(--text-2); line-height: 1.6; font-family: var(--mono);\">\n              DocTransit is a serverless, zero-install peer-to-peer file transfer utility for rapid data movement between desktop terminals and mobile devices.\n            </p>\n            <div style=\"display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: var(--text-2); font-family: var(--mono); border-top: 1px solid var(--border); padding-top: 16px;\">\n              <div>• <strong style=\"color: #FFFFFF;\">ZERO CLOUD STORAGE:</strong> Files stream directly between devices via WebSocket memory relay without server caching.</div>\n              <div>• <strong style=\"color: #FFFFFF;\">E2E ENCRYPTED:</strong> 256-bit AES-GCM encryption derived from the ephemeral session ID ensures zero interception.</div>\n              <div>• <strong style=\"color: #FFFFFF;\">INSTANT PAIRING:</strong> Point your DocTransit app or iPhone camera at the QR code to connect in &lt;1 second.</div>\n            </div>\n          </div>\n\n          <div style=\"border-top: 1px solid var(--border); padding-top: 20px;\">\n            <div style=\"font-size: 11px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px; margin-bottom: 14px;\">[ PAIRING PROCEDURE ]</div>\n            <div class=\"steps\" style=\"margin-bottom: 0; gap: 14px;\">\n              <div class=\"step\">\n                <span class=\"step-num\">01</span>\n                <span class=\"step-text\" style=\"font-size: 14px;\">Open DocTransit mobile app or iPhone camera</span>\n              </div>\n              <div class=\"step\">\n                <span class=\"step-num\">02</span>\n                <span class=\"step-text\" style=\"font-size: 14px;\">Scan the QR code displayed on the right</span>\n              </div>\n              <div class=\"step\">\n                <span class=\"step-num\">03</span>\n                <span class=\"step-text\" style=\"font-size: 14px;\">Connected — drop files or browse target directory across full screen</span>\n              </div>\n            </div>\n          </div>\n        </div>\n\n        <!-- Right Column: QR Code Pairing Terminal -->\n        <div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); padding: 32px; gap: 24px;\">\n          <div class=\"phase-label\" style=\"margin-bottom: 0; font-size: 12px; letter-spacing: 2px;\">WAITING FOR DEVICE CONNECTION</div>\n\n          <div class=\"qr-wrap\" style=\"margin-bottom: 0;\">\n            <div class=\"qr-box\" style=\"padding: 24px;\">\n              <div id=\"qrcode\"></div>\n              <div id=\"qr-expired-overlay\" class=\"qr-expired-overlay\">\n                <div class=\"expired-text\">[ QR CODE EXPIRED ]</div>\n                <button onclick=\"createSession(true)\" class=\"btn-refresh-qr\">[ REFRESH QR ]</button>\n              </div>\n            </div>\n          </div>\n\n          <div class=\"session-meta\" style=\"width: 100%; justify-content: space-around; border-top: 1px solid var(--border); padding-top: 20px; font-size: 12px;\">\n            <span>SESSION: <span id=\"display-session-id\" class=\"mono-accent\">---</span></span>\n            <span>EXPIRES: <span id=\"timer-sec\" class=\"mono-accent\">240s</span></span>\n            <button id=\"btn-refresh-waiting\" onclick=\"createSession(true)\" class=\"btn-text\">[ REFRESH SESSION ]</button>\n          </div>\n          <!-- Nearby Devices Discovery -->\n          <div id=\"nearby-section\" style=\"width: 100%; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 4px;\">\n            <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;\">\n              <div style=\"font-size: 10px; color: var(--text-3); letter-spacing: 1px;\">NEARBY DEVICES ON NETWORK</div>\n              <button onclick=\"fetchNearbyDevices()\" style=\"background: transparent; border: none; color: var(--text-2); font-family: var(--mono); font-size: 10px; cursor: pointer;\">[ REFRESH ]</button>\n            </div>\n            <div id=\"nearby-list\" style=\"display: flex; flex-direction: column; gap: 6px;\">\n              <div style=\"font-size: 11px; color: var(--text-3); text-align: center; padding: 6px;\">Searching for devices on same network...</div>\n            </div>\n          </div>\n\n          <div style=\"width: 100%; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 4px;\">\n            <div style=\"font-size: 10px; color: var(--text-3); letter-spacing: 1px; margin-bottom: 10px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;\">\n              PC-TO-PC MANUAL JOIN\n              <span title=\"To connect two PCs together, open DocTransit on your other PC. It will generate its own Session ID at the top. Enter that ID here to connect them.\" style=\"cursor: help; color: #FFFFFF; font-weight: bold; background: #27272A; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; line-height: 14px; border: 1px solid #3F3F46; font-size: 10px;\">i</span>\n            </div>\n            <div style=\"display: flex; gap: 8px; width: 100%;\">\n              <input id=\"peer-session-input\" type=\"text\" maxlength=\"12\" placeholder=\"ENTER SESSION ID\" spellcheck=\"false\" autocomplete=\"off\" style=\"flex: 1; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 0; padding: 10px 12px; font-family: var(--mono); font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; outline: none; transition: border-color 0.15s;\" onfocus=\"this.style.borderColor='#FFFFFF'\" onblur=\"this.style.borderColor=''\" onkeydown=\"if(event.key==='Enter')joinPeerSession()\" />\n              <button onclick=\"joinPeerSession()\" style=\"background: #FFFFFF; color: #000000; border: 1px solid var(--border); border-radius: 0; padding: 10px 16px; font-family: var(--mono); font-size: 11px; font-weight: 800; cursor: pointer; letter-spacing: 0.5px; white-space: nowrap;\">[ JOIN ]</button>\n            </div>\n            <button id=\"btn-share-pc-link\" onclick=\"copyPcLink()\" style=\"width: 100%; margin-top: 8px; background: transparent; color: var(--text-3); border: 1px solid var(--border); border-radius: 0; padding: 8px; font-family: var(--mono); font-size: 10px; font-weight: 800; cursor: pointer; letter-spacing: 0.5px; transition: border-color 0.15s, color 0.15s;\">[ COPY SHAREABLE LINK ]</button>\n          </div>\n          <div id=\"rate-limit-error\" style=\"display:none; color: #EF4444; border: 1px solid #EF4444; background: rgba(239, 68, 68, 0.12); padding: 12px 16px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-align: center; margin-top: 14px; width: 100%;\"></div>\n        </div>\n      </div>\n    </div>\n\n    <!-- Phase 2: Paired -->\n    <div id=\"phase-paired\">\n      <div id=\"received-files-section\" style=\"display:none;\">\n        <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;\">\n          <div class=\"section-label\" style=\"margin-bottom:0;\">RECEIVED FROM MOBILE DEVICE</div>\n          <button id=\"btn-preview-all\" onclick=\"openPhotoLightbox(0)\" style=\"width: auto; padding: 6px 14px; font-size: 11px; font-weight: 800; min-height: 32px; display: none;\">[ PREVIEW ALL PHOTOS ]</button>\n        </div>\n        <div id=\"received-files-list\"></div>\n      </div>\n\n      <div style=\"margin-bottom: 16px;\">\n        <button id=\"btn-pc-chat\" onclick=\"openChatModal('pc')\" style=\"width: 100%; background: var(--surface-2); border: 1px solid var(--border); padding: 14px; color: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase;\">\n          <span>[ OPEN MESSAGE WINDOW ]</span>\n          <span id=\"pc-chat-badge\" style=\"display:none; background: #FFFFFF; color: #000000; padding: 2px 8px; font-size: 11px; font-weight: 800;\">0 NEW</span>\n        </button>\n      </div>\n\n      <div class=\"folder-section\">\n        <div class=\"section-label\">TARGET DIRECTORY ON DEVICE</div>\n        <div id=\"breadcrumb\" class=\"breadcrumb\">\n          <span class=\"breadcrumb-item\" onclick=\"navigateRoot()\">/ROOT</span>\n        </div>\n        <div id=\"folder-grid\" class=\"folder-grid\"></div>\n      </div>\n\n      <div id=\"shortcut-mode-hint\" style=\"display:none; padding: 14px; background: var(--surface-2); border: 1px solid var(--border); font-size: 12px; color: #FFFFFF; font-family: var(--mono); font-weight: 700;\">\n        [ ! ] iPhone Shortcut mode active — files dropped below are sent via instant polling\n      </div>\n\n      <div id=\"dropzone\" class=\"dropzone\">\n        <input type=\"file\" id=\"file-input\" multiple />\n        <div class=\"dropzone-icon\">[ ↑ ]</div>\n        <p>DROP FILES TO TRANSFER</p>\n        <span id=\"queue-status\">E2E ENCRYPTED · SAVES DIRECTLY TO TARGET DIRECTORY</span>\n      </div>\n\n\n    </div>\n\n    <!-- Phase 3: Transferring -->\n    <div id=\"phase-transferring\">\n      <div class=\"transfer-info\">\n        <span id=\"transfer-filename\">file.pdf</span>\n        <span id=\"transfer-pct\">0%</span>\n      </div>\n      <div id=\"transfer-size\">0 KB</div>\n      <progress id=\"transfer-progress\" value=\"0\" max=\"100\" style=\"display:none;\"></progress>\n      <div class=\"progress-track\">\n        <div class=\"progress-fill\" id=\"progress-fill-bar\"></div>\n      </div>\n      <button class=\"btn-cancel\" onclick=\"cancelTransfer()\">[ CANCEL TRANSFER ]</button>\n    </div>\n\n    <!-- Phase 4: Done -->\n    <div id=\"phase-done\">\n      <div class=\"done-icon\">[ OK ]</div>\n      <div>\n        <p id=\"done-message\">TRANSFER COMPLETED!</p>\n        <p id=\"done-subtext\">Saved to target device</p>\n      </div>\n      <button class=\"btn-reset\" onclick=\"resetToPaired()\">[ SEND ANOTHER FILE ]</button>\n    </div>\n  </div>\n\n  <!-- Phone Mode Container -->\n  <div id=\"phone-mode-container\" class=\"container\" style=\"display: none;\">\n    <header>\n      <div class=\"brand\">\n        <img src=\"logo.png\" alt=\"DocTransit Logo\" />\n        <div>\n          <div class=\"brand-name\">DOCTRANSIT PHONE</div>\n        </div>\n      </div>\n      <div class=\"status-pill\">\n        <div id=\"phone-status-dot\" class=\"status-dot\"></div>\n        <span id=\"phone-status-text\">DISCONNECTED</span>\n      </div>\n    </header>\n\n    <!-- Permanent Android APK Button -->\n    <a id=\"android-apk-btn\" href=\"doctransit-app.apk\" download=\"doctransit-app.apk\" style=\"display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;\">\n      [ DOWNLOAD NATIVE ANDROID APK ]\n    </a>\n\n    <!-- Screen 1: Scanner -->\n    <div id=\"phone-screen-scanner\" style=\"display: flex; flex-direction: column; gap: 16px;\">\n      <p style=\"font-size: 12px; color: var(--text-2); text-align: center;\">Point camera at PC terminal QR code to pair</p>\n      <div style=\"background: #000; border-radius: 0; overflow: hidden; position: relative; min-height: 260px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);\">\n        <video id=\"phone-video\" playsinline autoplay muted style=\"width: 100%; height: auto; display: block;\"></video>\n        <div id=\"phone-camera-msg\" style=\"position: absolute; color: var(--text-3); font-size: 12px; text-align: center; padding: 20px; font-family: var(--mono);\">Requesting camera access...</div>\n      </div>\n      <div style=\"display: flex; flex-direction: column; gap: 10px; margin-top: 8px;\">\n        <input type=\"text\" id=\"phone-manual-id\" placeholder=\"Or enter 12-char Session ID\" maxlength=\"12\" />\n        <button onclick=\"phoneConnectManual()\">[ CONNECT TO SESSION ]</button>\n      </div>\n    </div>\n\n    <!-- Screen 2: Connected -->\n    <div id=\"phone-screen-connected\" style=\"display: none; flex-direction: column; gap: 16px;\">\n      <div class=\"folder-section\">\n        <p style=\"font-size: 13px; color: var(--text); font-weight: 800; font-family: var(--mono);\">CONNECTED TO PC TERMINAL</p>\n        <p id=\"phone-session-info\" style=\"font-size: 12px; color: #FFFFFF; margin-top: 4px; font-family: var(--mono);\">SESSION ID: ---</p>\n      </div>\n\n      <!-- Send Dropzone -->\n      <div id=\"phone-dropzone\" class=\"dropzone\">\n        <input type=\"file\" id=\"phone-file-input\" multiple onchange=\"phoneHandleFilesSelected(event)\" />\n        <div style=\"font-family: var(--mono); font-size: 18px; color: var(--text); margin-bottom: 8px;\">[ + ]</div>\n        <div style=\"font-family: var(--mono); font-size: 13px; font-weight: 800; color: var(--text);\">TAP TO SEND FILES TO PC</div>\n        <div style=\"font-size: 11px; color: var(--text-2); margin-top: 4px;\">PHOTOS · DOCUMENTS · ARCHIVES</div>\n      </div>\n\n      <div style=\"margin-top: 16px;\">\n        <button id=\"btn-phone-chat\" onclick=\"openChatModal('phone')\" style=\"width: 100%; background: var(--surface-2); border: 1px solid var(--border); padding: 14px; color: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase;\">\n          <span>[ OPEN MESSAGE WINDOW ]</span>\n          <span id=\"phone-chat-badge\" style=\"display:none; background: #FFFFFF; color: #000000; padding: 2px 8px; font-size: 11px; font-weight: 800;\">0 NEW</span>\n        </button>\n      </div>\n\n      <!-- Active Transfer Progress -->\n      <div id=\"phone-transfer-area\" style=\"display: none; flex-direction: column; gap: 14px; padding: 18px; background: var(--surface-2); border: 1px solid var(--border);\">\n        <div style=\"display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; font-family: var(--mono);\">\n          <span id=\"phone-transfer-title\" style=\"color: #FFF;\">TRANSFERRING...</span>\n          <span id=\"phone-transfer-pct\" style=\"color: #FFFFFF;\">0%</span>\n        </div>\n        <div style=\"font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono);\" id=\"phone-transfer-filename\">file.pdf</div>\n        <progress id=\"phone-transfer-progress\" value=\"0\" max=\"100\" style=\"display:none;\"></progress>\n        <div class=\"progress-track\">\n          <div class=\"progress-fill\" id=\"phone-transfer-bar\"></div>\n        </div>\n        <button onclick=\"phoneCancelTransfer()\" class=\"btn-cancel\">[ CANCEL TRANSFER ]</button>\n      </div>\n    </div>\n\n    <!-- Screen 3: Done -->\n    <div id=\"phone-screen-done\" style=\"display: none; flex-direction: column; align-items: center; text-align: center; gap: 16px; padding: 24px 0;\">\n      <div class=\"done-icon\">[ OK ]</div>\n      <div>\n        <p id=\"phone-done-message\">TRANSFER COMPLETED!</p>\n        <p id=\"phone-done-subtext\">File.pdf</p>\n      </div>\n      <a id=\"phone-download-btn\" href=\"#\" download style=\"background: #FFFFFF; color: #000000; border: 1px solid var(--border); text-decoration: none; padding: 12px 24px; border-radius: 0; font-size: 13px; font-weight: 800; font-family: var(--mono); white-space: nowrap; cursor: pointer; display: inline-block;\">[ DOWNLOAD FILE ]</a>\n      <button class=\"btn-reset\" onclick=\"phoneResetToConnected()\">[ TRANSFER ANOTHER ]</button>\n    </div>\n  </div>\n\n  <!-- Photo Lightbox Gallery Modal -->\n  <div id=\"photo-lightbox\">\n    <div class=\"lightbox-header\">\n      <div style=\"display: flex; align-items: center; gap: 12px;\">\n        <span id=\"lightbox-counter\" style=\"font-family: var(--mono); font-size: 12px; font-weight: 800; color: #FFFFFF; background: var(--surface-2); padding: 4px 10px; border: 1px solid var(--border);\">1 / 1</span>\n        <span id=\"lightbox-title\" style=\"font-family: var(--mono); font-size: 14px; font-weight: 800; color: #FFF; max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\">photo.jpg</span>\n      </div>\n      <div style=\"display: flex; gap: 10px; align-items: center;\">\n        <a id=\"lightbox-download-btn\" href=\"#\" download class=\"lightbox-btn primary\">[ DOWNLOAD ]</a>\n        <button onclick=\"closePhotoLightbox()\" class=\"lightbox-btn\">[ CLOSE ]</button>\n      </div>\n    </div>\n\n    <div class=\"lightbox-img-wrap\">\n      <button onclick=\"changePhotoLightbox(-1)\" class=\"lightbox-nav-btn left\">[ < ]</button>\n      <img id=\"lightbox-image\" src=\"\" alt=\"Preview\" />\n      <div id=\"lightbox-nonimage\" style=\"display: none; background: var(--surface); border: 1px solid var(--border); padding: 40px; text-align: center; max-width: 400px;\">\n        <div style=\"font-size: 32px; margin-bottom: 16px; font-family: var(--mono); font-weight: 800;\">[ FILE ]</div>\n        <div id=\"lightbox-nonimage-name\" style=\"font-family: var(--mono); font-size: 15px; font-weight: 800; color: #FFF; margin-bottom: 8px; word-break: break-all;\">file.pdf</div>\n        <div style=\"font-size: 12px; color: var(--text-2); margin-bottom: 20px;\">Document preview not supported in browser</div>\n        <a id=\"lightbox-nonimage-download\" href=\"#\" download class=\"lightbox-btn primary\">[ DOWNLOAD FILE ]</a>\n      </div>\n      <button onclick=\"changePhotoLightbox(1)\" class=\"lightbox-nav-btn right\">[ > ]</button>\n    </div>\n\n    <div id=\"lightbox-thumb-strip\" class=\"thumb-strip\"></div>\n  </div>\n\n  <!-- Pop-Open Messages Modal -->\n  <div id=\"chat-modal\">\n    <div class=\"chat-modal-box\">\n      <div class=\"chat-modal-header\">\n        <div style=\"font-family: var(--mono); font-size: 13px; font-weight: 800; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1;\">[ MESSAGES / CHAT ]</div>\n        <button onclick=\"closeChatModal()\" style=\"background: transparent; border: 1px solid var(--border); color: var(--text-2); padding: 6px 12px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; white-space: nowrap; flex-shrink: 0;\">[ CLOSE ]</button>\n      </div>\n      <div id=\"chat-modal-messages\" class=\"chat-modal-messages\">\n        <div id=\"chat-empty-state\" style=\"margin: auto; color: var(--text-3); font-family: var(--mono); font-size: 12px; text-align: center;\">No messages in this session yet.</div>\n      </div>\n      <div class=\"chat-modal-footer\">\n        <textarea id=\"chat-modal-input\" placeholder=\"Type a message...\" style=\"flex: 1 1 0%; min-width: 0; width: 0; height: 44px; background: var(--surface); border: 1px solid var(--border); padding: 10px 12px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; resize: none; border-radius: 0; box-sizing: border-box;\" onkeydown=\"if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendModalChatMessage();}\"></textarea>\n        <button onclick=\"sendModalChatMessage()\" style=\"flex: 0 0 auto; flex-shrink: 0; background: #FFFFFF; color: #000000; border: 1px solid var(--border); font-family: var(--mono); font-size: 12px; font-weight: 800; padding: 0 14px; height: 44px; cursor: pointer; text-transform: uppercase; margin: 0; border-radius: 0;\">[ SEND ]</button>\n      </div>\n    </div>\n  </div>\n\n  <script>\n    const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\\.168\\.|^10\\.|^172\\.(1[6-9]|2[0-9]|3[0-1])\\./.test(window.location.hostname);\n    const WORKER_URL = window.DOCTRANSIT_WORKER_URL || (isFileOrLocal ? 'wss://doctransit.in' : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);\n    const HTTP_URL = WORKER_URL.replace('ws://', 'http://').replace('wss://', 'https://');\n\n    const state = {\n      sessionId: null,\n      ws: null,\n      cryptoKey: null,\n      folderTree: [],\n      currentFolderId: null,\n      currentFolderPath: [],\n      phase: 'waiting',\n      timerInterval: null,\n      expirySeconds: 240,\n      connectedDevice: null,\n      currentTransfer: null,\n      sendQueue: [],\n      receivedFiles: [],\n      photoIndices: [],\n      isPeerMode: false\n    };\n\n    const PHONE_MODE = new URLSearchParams(window.location.search).get('mode') === 'phone'\n      || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);\n\n    const PEER_SESSION_ID = new URLSearchParams(window.location.search).get('s');\n\n    if (PHONE_MODE) {\n      document.title = 'DocTransit — Phone';\n      window.addEventListener('DOMContentLoaded', initPhoneMode);\n    } else if (PEER_SESSION_ID && PEER_SESSION_ID.length === 12) {\n      document.title = 'DocTransit — Peer Transfer';\n      window.addEventListener('DOMContentLoaded', () => initPeerMode(PEER_SESSION_ID));\n    } else {\n      window.addEventListener('DOMContentLoaded', initPCMode);\n    }\n\n    function initPCMode() {\n      const pcEl = document.getElementById('pc-mode-container');\n      const phoneEl = document.getElementById('phone-mode-container');\n      if (pcEl) pcEl.style.display = 'flex';\n      if (phoneEl) phoneEl.style.display = 'none';\n      createSession();\n      setupDropzone();\n      fetchNearbyDevices();\n      setInterval(fetchNearbyDevices, 4000);\n    }\n\n    async function initPeerMode(sessionId) {\n      const pcEl = document.getElementById('pc-mode-container');\n      const phoneEl = document.getElementById('phone-mode-container');\n      if (pcEl) pcEl.style.display = 'flex';\n      if (phoneEl) phoneEl.style.display = 'none';\n      state.sessionId = sessionId;\n      state.isPeerMode = true;\n      setStatus(false, 'CONNECTING TO HOST PC...');\n      setPhase('waiting');\n      // Skip createSession — go straight to key derivation and WS connect\n      state.cryptoKey = await deriveAESKey(sessionId);\n      connectAsPeer(sessionId);\n      setupDropzone();\n    }\n\n    function connectAsPeer(sessionId) {\n      if (state.ws) {\n        const old = state.ws;\n        old.onclose = null;\n        try { old.close(); } catch (e) {}\n      }\n      const ws = new WebSocket(`${WORKER_URL}/session/${sessionId}/peer`);\n      ws.binaryType = 'arraybuffer';\n      state.ws = ws;\n\n      ws.onopen = () => {\n        setStatus(false, 'WAITING FOR HOST PC...');\n      };\n\n      let isProcessingBinary = false;\n      const binaryQueue = [];\n\n      async function processBinaryQueue() {\n        if (isProcessingBinary) return;\n        isProcessingBinary = true;\n        try {\n          while (binaryQueue.length > 0) {\n            let buffer = binaryQueue.shift();\n            if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();\n            await handleIncomingBinaryChunk(buffer);\n          }\n        } finally {\n          isProcessingBinary = false;\n        }\n      }\n\n      ws.onmessage = (event) => {\n        if (typeof event.data === 'string') {\n          const msg = JSON.parse(event.data);\n          if (msg.type === 'transfer_init' && (!msg.total_chunks || msg.total_chunks <= 0)) {\n            console.error('Invalid transfer_init: total_chunks must be > 0');\n            state.ws.send(JSON.stringify({ type: 'error', message: 'Invalid transfer size' }));\n            return;\n          }\n          handleTextMessage(msg);\n        } else {\n          binaryQueue.push(event.data);\n          processBinaryQueue();\n        }\n      };\n\n      ws.onclose = () => {\n        if (state.isPeerMode) {\n          setStatus(false, 'DISCONNECTED FROM HOST');\n          setPhase('waiting');\n        }\n      };\n    }\n\n    function copyPcLink() {\n      if (!state.sessionId) return;\n      const link = `${HTTP_URL}/join?s=${state.sessionId}`;\n      navigator.clipboard.writeText(link).then(() => {\n        const btn = document.getElementById('btn-share-pc-link');\n        if (btn) {\n          btn.innerText = '[ COPIED! ]';\n          btn.style.borderColor = '#22c55e';\n          btn.style.color = '#22c55e';\n          setTimeout(() => {\n            btn.innerText = '[ SHARE PC LINK ]';\n            btn.style.borderColor = '';\n            btn.style.color = '';\n          }, 2000);\n        }\n      }).catch(() => {\n        prompt('Copy this link:', link);\n      });\n    }\n\n    async function joinPeerSession() {\n      const input = document.getElementById('peer-session-input');\n      const sid = (input ? input.value : '').trim().toLowerCase();\n      if (!sid || sid.length !== 12) {\n        alert('Enter a valid 12-character session ID');\n        return;\n      }\n      // Close current session\n      if (state.ws) {\n        const old = state.ws;\n        state.ws = null;\n        old.onclose = null;\n        try { old.close(); } catch (e) {}\n      }\n      if (state.timerInterval) {\n        clearInterval(state.timerInterval);\n        state.timerInterval = null;\n      }\n      // Switch to peer mode\n      state.sessionId = sid;\n      state.isPeerMode = true;\n      state.cryptoKey = await deriveAESKey(sid);\n      connectAsPeer(sid);\n    }\n\n    function recordMySessionHistory(sid) {\n      if (!sid) return;\n      try {\n        const list = JSON.parse(localStorage.getItem('doctransit_my_history') || '[]');\n        if (!list.includes(sid)) {\n          list.push(sid);\n          if (list.length > 20) list.shift();\n          localStorage.setItem('doctransit_my_history', JSON.stringify(list));\n        }\n      } catch (e) {}\n    }\n\n    function isMyHistorySession(sid) {\n      if (!sid) return false;\n      if (sid === state.sessionId) return true;\n      try {\n        const list = JSON.parse(localStorage.getItem('doctransit_my_history') || '[]');\n        return list.includes(sid);\n      } catch (e) {\n        return false;\n      }\n    }\n\n    window.addEventListener('beforeunload', () => {\n      if (state.sessionId) {\n        try { navigator.sendBeacon(`${HTTP_URL}/nearby?unregister=${state.sessionId}`); } catch(e){}\n      }\n    });\n\n    async function fetchNearbyDevices() {\n      const container = document.getElementById('nearby-list');\n      if (!container || state.phase !== 'waiting' || !state.sessionId) return;\n      try {\n        recordMySessionHistory(state.sessionId);\n        const currentSid = state.sessionId;\n        const history = (JSON.parse(localStorage.getItem('doctransit_my_history') || '[]')).join(',');\n        const res = await fetch(`${HTTP_URL}/nearby?current=${currentSid}&ping=${currentSid}&excludes=${history}`);\n        const data = await res.json();\n        const devices = (data.devices || []).filter(d => !isMyHistorySession(d.session_id));\n        if (devices.length === 0) {\n          container.innerHTML = `<div style=\"font-size: 11px; color: var(--text-3); text-align: center; padding: 6px;\">No other devices found on this network.</div>`;\n          return;\n        }\n        container.innerHTML = devices.map(d => `\n          <button onclick=\"quickJoinPeer('${d.session_id}')\" style=\"width: 100%; background: var(--surface); color: #FFFFFF; border: 1px solid var(--border); padding: 8px 12px; font-family: var(--mono); font-size: 11px; font-weight: 800; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-radius: 0; transition: border-color 0.15s;\" onmouseover=\"this.style.borderColor='#FFFFFF'\" onmouseout=\"this.style.borderColor=''\">\n            <span>${d.is_same_ip ? '💻' : '🌐'} SESSION: ${d.session_id} <span style=\"font-size: 9px; color: ${d.is_same_ip ? '#22c55e' : 'var(--text-3)'};\">(${d.is_same_ip ? 'SAME WI-FI' : 'ONLINE'})</span></span>\n            <span style=\"color: #22c55e; font-size: 10px;\">[ CONNECT ]</span>\n          </button>\n        `).join('');\n      } catch (err) {\n        console.warn('Error fetching nearby devices:', err);\n      }\n    }\n\n    function quickJoinPeer(sessionId) {\n      const input = document.getElementById('peer-session-input');\n      if (input) input.value = sessionId;\n      joinPeerSession();\n    }\n\n    function flattenTreeList(tree, parentId = null) {\n      let result = [];\n      if (!tree || !Array.isArray(tree)) return result;\n      for (const item of tree) {\n        const flatItem = {\n          id: item.id,\n          name: item.name || 'Folder',\n          parentId: item.parentId || item.parent_id || parentId,\n          color: item.color || '#FFFFFF'\n        };\n        result.push(flatItem);\n        if (item.children && Array.isArray(item.children)) {\n          result = result.concat(flattenTreeList(item.children, item.id));\n        }\n      }\n      return result;\n    }\n\n    const refreshTimestamps = [];\n    let rateLimitCooldownUntil = 0;\n    let rateLimitTimer = null;\n\n    function showRateLimitError(remainingSec) {\n      const errEl = document.getElementById('rate-limit-error');\n      if (errEl) {\n        errEl.style.display = 'block';\n        errEl.innerText = `[ ERROR: REFRESH RATE LIMIT EXCEEDED (5x IN 10s). PLEASE WAIT ${remainingSec}s TO REFRESH AGAIN ]`;\n      }\n    }\n\n    function checkRateLimit() {\n      const now = Date.now();\n      if (now < rateLimitCooldownUntil) {\n        const remaining = Math.ceil((rateLimitCooldownUntil - now) / 1000);\n        showRateLimitError(remaining);\n        return false;\n      }\n\n      while (refreshTimestamps.length > 0 && refreshTimestamps[0] <= now - 10000) {\n        refreshTimestamps.shift();\n      }\n\n      refreshTimestamps.push(now);\n\n      if (refreshTimestamps.length >= 5) {\n        rateLimitCooldownUntil = now + 120000;\n        showRateLimitError(120);\n\n        if (rateLimitTimer) clearInterval(rateLimitTimer);\n        rateLimitTimer = setInterval(() => {\n          const current = Date.now();\n          if (current >= rateLimitCooldownUntil) {\n            clearInterval(rateLimitTimer);\n            rateLimitTimer = null;\n            const errEl = document.getElementById('rate-limit-error');\n            if (errEl) errEl.style.display = 'none';\n          } else {\n            const rem = Math.ceil((rateLimitCooldownUntil - current) / 1000);\n            showRateLimitError(rem);\n          }\n        }, 1000);\n\n        return false;\n      }\n\n      const errEl = document.getElementById('rate-limit-error');\n      if (errEl) errEl.style.display = 'none';\n      return true;\n    }\n\n    let isCreatingSession = false;\n    async function createSession(forceNew = false) {\n      const oldSid = state.sessionId || sessionStorage.getItem('doctransit_session_id') || '';\n      if (forceNew) {\n        if (!checkRateLimit()) return;\n        if (oldSid) {\n          try { fetch(`${HTTP_URL}/nearby?unregister=${oldSid}`); } catch(e){}\n        }\n        sessionStorage.removeItem('doctransit_session_id');\n        sessionStorage.removeItem('doctransit_session_expiry');\n      }\n      if (isCreatingSession) return;\n      isCreatingSession = true;\n\n      try {\n        if (state.timerInterval) {\n          clearInterval(state.timerInterval);\n          state.timerInterval = null;\n        }\n        if (state.transferStallTimer) {\n          clearTimeout(state.transferStallTimer);\n          state.transferStallTimer = null;\n        }\n\n        if (state.ws) {\n          const oldWs = state.ws;\n          state.ws = null;\n          oldWs.onclose = null;\n          if (oldWs.readyState === WebSocket.OPEN && state.phase !== 'waiting') {\n            try { oldWs.send(JSON.stringify({ type: 'cancelled' })); } catch (e) {}\n          }\n          try { oldWs.close(); } catch (e) {}\n        }\n        \n        if (state.receivedFiles) {\n          closePhotoLightbox();\n          state.receivedFiles.forEach(f => f.blobUrl && URL.revokeObjectURL(f.blobUrl));\n        }\n        \n        state.expirySeconds = 240;\n        state.sendQueue = [];\n        state.receivedFiles = [];\n        state.photoIndices = [];\n        state.currentTransfer = null;\n        setPhase('waiting');\n        \n        const overlay = document.getElementById('qr-expired-overlay');\n        if (overlay) overlay.style.display = 'none';\n        const qrcodeEl = document.getElementById('qrcode');\n        if (qrcodeEl) qrcodeEl.style.opacity = '1';\n        \n        updateTimerDisplay();\n\n        const savedId = sessionStorage.getItem('doctransit_session_id');\n        const savedExpiry = parseInt(sessionStorage.getItem('doctransit_session_expiry') || '0', 10);\n        let data = null;\n\n        if (savedId && savedExpiry && savedExpiry > Date.now() + 10000) {\n          data = {\n            session_id: savedId,\n            expires_at: new Date(savedExpiry).toISOString()\n          };\n        } else {\n          const res = await fetch(`${HTTP_URL}/session/new?previous=${oldSid}`);\n          if (!res.ok) {\n            const errData = await res.json().catch(() => ({}));\n            const errEl = document.getElementById('rate-limit-error');\n            if (errEl) {\n              errEl.innerText = errData.error || 'Server error. Please try again later.';\n              errEl.style.display = 'block';\n            }\n            isCreatingSession = false;\n            return;\n          }\n          data = await res.json();\n          sessionStorage.setItem('doctransit_session_id', data.session_id);\n          sessionStorage.setItem('doctransit_session_expiry', new Date(data.expires_at).getTime().toString());\n        }\n\n        if (!data || !data.session_id) {\n          isCreatingSession = false;\n          return;\n        }\n\n        if (state.sessionId && state.sessionId !== data.session_id) {\n          recordMySessionHistory(state.sessionId);\n        }\n        state.sessionId = data.session_id;\n        recordMySessionHistory(data.session_id);\n        const dispEl = document.getElementById('display-session-id');\n        if (dispEl) dispEl.innerText = data.session_id;\n        fetchNearbyDevices();\n\n        if (data.expires_at) {\n          state.expirySeconds = Math.max(0, Math.floor((new Date(data.expires_at).getTime() - Date.now()) / 1000));\n        } else {\n          state.expirySeconds = 240;\n        }\n        updateTimerDisplay();\n\n        const qrEl = document.getElementById('qrcode');\n        qrEl.innerHTML = '';\n        const expiryMs = data.expires_at ? new Date(data.expires_at).getTime() : Date.now() + 240000;\n        const pwaBase = HTTP_URL.replace('ws://', 'http://').replace('wss://', 'https://');\n        const qrPayload = `${pwaBase}/phone.html?s=${data.session_id}&e=${expiryMs}`;\n\n        new QRCode(qrEl, {\n          text: qrPayload,\n          width: 340,\n          height: 340,\n          colorDark: \"#000000\",\n          colorLight: \"#FFFFFF\",\n          correctLevel: QRCode.CorrectLevel.M\n        });\n\n        state.timerInterval = setInterval(() => {\n          state.expirySeconds = Math.max(0, state.expirySeconds - 1);\n          updateTimerDisplay();\n          if (state.expirySeconds <= 0) {\n            clearInterval(state.timerInterval);\n            if (state.ws) {\n              const oldWs = state.ws;\n              state.ws = null;\n              oldWs.onclose = null;\n              try { oldWs.close(); } catch (e) {}\n            }\n            if (state.phase === 'waiting') {\n              const overlay = document.getElementById('qr-expired-overlay');\n              if (overlay) overlay.style.display = 'flex';\n              const qEl = document.getElementById('qrcode');\n              if (qEl) qEl.style.opacity = '0.25';\n              const secEl = document.getElementById('timer-sec');\n              if (secEl) secEl.innerText = '0s';\n              setStatus(false, 'QR CODE EXPIRED');\n            } else {\n              console.warn('Session expired.');\n            }\n          }\n        }, 1000);\n\n        connectWebSocket();\n      } catch (err) {\n        setStatus(false, 'ERROR CREATING SESSION');\n        console.error(err);\n      } finally {\n        isCreatingSession = false;\n      }\n    }\n\n    let reconnectAttempts = 0;\n\n    function handlePeerDisconnected(event) {\n      if (state.phase === 'transferring') {\n        alert('Peer disconnected during transfer.');\n      }\n      if (state.isPeerMode) {\n        // Peer mode: try to reconnect to the host\n        setStatus(false, 'DISCONNECTED FROM HOST');\n        document.getElementById('btn-disconnect').style.display = 'none';\n        const oldWs = state.ws;\n        state.ws = null;\n        if (oldWs) {\n          oldWs.onclose = null;\n          try { oldWs.close(); } catch (e) {}\n        }\n        setPhase('waiting');\n        // Try to reconnect after 2 seconds\n        setTimeout(() => connectAsPeer(state.sessionId), 2000);\n      } else if (state.phase === 'waiting') {\n        // Reconnect silently if dropped while waiting (e.g. idle timeout)\n        reconnectAttempts++;\n        if (reconnectAttempts > 3 || (event && event.code === 1008)) {\n          reconnectAttempts = 0;\n          createSession(true); // Force new session if server consistently rejects or limits\n        } else {\n          setTimeout(connectWebSocket, 1000);\n        }\n      } else {\n        // We are paired (host mode).\n        if (event) {\n          // OUR websocket dropped due to network blip. Try to reconnect to the same session!\n          reconnectAttempts++;\n          setStatus(false, 'RECONNECTING...');\n          setTimeout(connectWebSocket, 1500);\n        } else {\n          // Peer explicitly sent { type: 'disconnected' }\n          setStatus(false, 'DISCONNECTED BY PEER');\n          document.getElementById('btn-disconnect').style.display = 'none';\n          clearInterval(state.timerInterval);\n          const oldWs = state.ws;\n          state.ws = null;\n          if (oldWs) {\n            oldWs.onclose = null;\n            try { oldWs.close(); } catch (e) {}\n          }\n          setPhase('waiting');\n          createSession();\n        }\n      }\n    }\n\n    function updateTimerDisplay() {\n      const el = document.getElementById('timer-sec');\n      if (el) el.innerText = `${state.expirySeconds}s`;\n      if (state.phase !== 'waiting' && state.connectedDevice) {\n        setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (${state.expirySeconds}s LEFT)`);\n      }\n    }\n\n    function connectWebSocket() {\n      if (state.ws) {\n        const old = state.ws;\n        old.onclose = null;\n        try { old.close(); } catch (e) {}\n      }\n      const ws = new WebSocket(`${WORKER_URL}/session/${state.sessionId}/pc`);\n      ws.binaryType = 'arraybuffer';\n      state.ws = ws;\n\n      ws.onopen = () => {\n        reconnectAttempts = 0;\n        setStatus(false, 'WAITING FOR PHONE...');\n      };\n\n      let isProcessingBinary = false;\n      const binaryQueue = [];\n      \n      async function processBinaryQueue() {\n        if (isProcessingBinary) return;\n        isProcessingBinary = true;\n        try {\n          while (binaryQueue.length > 0) {\n            let buffer = binaryQueue.shift();\n            if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();\n            await handleIncomingBinaryChunk(buffer);\n          }\n        } finally {\n          isProcessingBinary = false;\n        }\n      }\n\n      ws.onmessage = (event) => {\n        if (typeof event.data === 'string') {\n          const msg = JSON.parse(event.data);\n          if (msg.type === 'transfer_init' && (!msg.total_chunks || msg.total_chunks <= 0)) {\n            console.error('Invalid transfer_init: total_chunks must be > 0');\n            state.ws.send(JSON.stringify({ type: 'error', message: 'Invalid transfer size' }));\n            return;\n          }\n          handleTextMessage(msg);\n        } else {\n          binaryQueue.push(event.data);\n          processBinaryQueue();\n        }\n      };\n\n      ws.onclose = (event) => {\n        handlePeerDisconnected(event);\n      };\n    }\n\n    async function handleTextMessage(msg) {\n      if (msg.type === 'waiting') {\n        setStatus(false, 'WAITING FOR PHONE...');\n      } else if (msg.type === 'paired') {\n        if (state.timerInterval) clearInterval(state.timerInterval);\n        state.expirySeconds = 240;\n        updateTimerDisplay();\n        state.connectedDevice = msg.device || 'Phone App';\n        setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (${state.expirySeconds}s LEFT)`);\n        document.getElementById('btn-disconnect').style.display = 'block';\n        if (!state.cryptoKey) {\n          state.cryptoKey = await deriveAESKey(state.sessionId);\n        }\n        if (state.phase !== 'paired' && state.phase !== 'transferring') {\n          setPhase('paired');\n        }\n        if (msg.shortcut_mode) {\n          document.getElementById('shortcut-mode-hint').style.display = 'block';\n        }\n      } else if (msg.type === 'folders') {\n        const list = msg.folders || flattenTreeList(msg.tree || []);\n        state.folderTree = list;\n        renderFolders();\n      } else if (msg.type === 'ready') {\n        if (state.currentTransfer && state.currentTransfer.direction === 'sending') {\n          startSendingChunks();\n        }\n      } else if (msg.type === 'ack') {\n        if (state.currentTransfer && state.currentTransfer.direction === 'sending') {\n          handleAck(msg.chunk_index);\n        }\n      } else if (msg.type === 'shortcut_ack') {\n        setPhase('done');\n        document.getElementById('done-message').innerText = 'RECEIVED ON IPHONE!';\n        document.getElementById('done-subtext').innerText = 'Saved to iPhone Files app';\n      } else if (msg.type === 'text_message') {\n        appendChatMessage('PEER', msg.text);\n      } else if (msg.type === 'transfer_init') {\n        state.currentTransfer = {\n          direction: 'receiving',\n          filename: msg.filename || 'received_file',\n          size: typeof msg.size === 'number' ? msg.size : 0,\n          total_chunks: typeof msg.total_chunks === 'number' ? msg.total_chunks : 0,\n          mime_type: msg.mime_type || 'application/octet-stream',\n          receivedChunks: 0,\n          chunksData: new Array(typeof msg.total_chunks === 'number' ? msg.total_chunks : 0)\n        };\n        setPhase('transferring');\n        updateProgressDisplay(state.currentTransfer.filename, state.currentTransfer.size, 0);\n        if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n          state.ws.send(JSON.stringify({ type: 'ready' }));\n        }\n\n      } else if (msg.type === 'cancelled') {\n        alert('Transfer cancelled by phone');\n        setPhase('paired');\n      } else if (msg.type === 'disconnected') {\n        handlePeerDisconnected();\n      } else if (msg.type === 'peer_disconnected') {\n        setStatus(false, 'PHONE DROPPED (WAITING FOR RECONNECT...)');\n      }\n    }\n\n\n    function setStatus(active, text) {\n      const dot = document.getElementById('status-dot');\n      const txt = document.getElementById('status-text');\n      if (dot) {\n        if (active) dot.classList.add('active');\n        else dot.classList.remove('active');\n      }\n      if (txt) txt.innerText = text;\n    }\n\n    function setPhase(phase) {\n      state.phase = phase;\n      document.getElementById('phase-waiting').style.display = (phase === 'waiting') ? 'flex' : 'none';\n      document.getElementById('phase-paired').style.display = (phase === 'paired') ? 'flex' : 'none';\n      document.getElementById('phase-transferring').style.display = (phase === 'transferring') ? 'flex' : 'none';\n      document.getElementById('phase-done').style.display = (phase === 'done') ? 'flex' : 'none';\n      if (phase === 'waiting') {\n        clearChatMessages();\n        const hint = document.getElementById('shortcut-mode-hint');\n        if (hint) hint.style.display = 'none';\n      }\n      if (phase === 'paired') {\n        renderFolders();\n        renderReceivedFiles();\n      }\n    }\n\n    function disconnectSession() {\n      clearChatMessages();\n      sessionStorage.removeItem('doctransit_session_id');\n      sessionStorage.removeItem('doctransit_session_expiry');\n      if (state.ws) {\n        const oldWs = state.ws;\n        state.ws = null;\n        oldWs.onclose = null;\n        if (oldWs.readyState === 1) { // WebSocket.OPEN\n          try { oldWs.send(JSON.stringify({ type: 'disconnected' })); } catch (e) {}\n          setTimeout(() => { try { oldWs.close(); } catch(e) {} }, 100);\n        } else {\n          try { oldWs.close(); } catch (e) {}\n        }\n      }\n      clearInterval(state.timerInterval);\n      setPhase('waiting');\n      document.getElementById('btn-disconnect').style.display = 'none';\n      createSession();\n    }\n\n    function navigateRoot() {\n      state.currentFolderId = null;\n      state.currentFolderPath = [];\n      renderFolders();\n    }\n\n    function navigateIntoFolder(id, name) {\n      state.currentFolderId = id;\n      state.currentFolderPath.push({ id, name });\n      renderFolders();\n    }\n\n    function renderFolders() {\n      const bcEl = document.getElementById('breadcrumb');\n      if (!bcEl) return;\n      bcEl.innerHTML = '';\n      \n      const rootSpan = document.createElement('span');\n      rootSpan.className = 'breadcrumb-item';\n      rootSpan.textContent = '/ROOT';\n      rootSpan.addEventListener('click', () => navigateRoot());\n      bcEl.appendChild(rootSpan);\n\n      for (let i = 0; i < state.currentFolderPath.length; i++) {\n        const item = state.currentFolderPath[i];\n        const sepSpan = document.createElement('span');\n        sepSpan.className = 'breadcrumb-sep';\n        sepSpan.textContent = ' > ';\n        bcEl.appendChild(sepSpan);\n\n        const itemSpan = document.createElement('span');\n        itemSpan.className = 'breadcrumb-item';\n        itemSpan.textContent = item.name.toUpperCase();\n        itemSpan.addEventListener('click', () => navigateUpTo(i));\n        bcEl.appendChild(itemSpan);\n      }\n\n      const children = (state.folderTree || []).filter(f => {\n        const pid = f.parentId !== undefined ? f.parentId : f.parent_id;\n        return pid === state.currentFolderId || (state.currentFolderId === null && !pid);\n      });\n      const gridEl = document.getElementById('folder-grid');\n      if (!gridEl) return;\n\n      if (children.length === 0) {\n        gridEl.innerHTML = `<p style=\"color: var(--text-3); font-size: 11px; align-self: center; font-family: var(--mono);\">NO SUBDIRECTORIES INSIDE THIS DIRECTORY</p>`;\n        return;\n      }\n\n      gridEl.innerHTML = '';\n      children.forEach(f => {\n        const btn = document.createElement('button');\n        btn.className = 'folder-btn';\n        btn.textContent = `/${(f.name || 'Folder').toUpperCase()}`;\n        btn.addEventListener('click', () => navigateIntoFolder(f.id, f.name || 'Folder'));\n        gridEl.appendChild(btn);\n      });\n    }\n\n    function navigateUpTo(index) {\n      if (index < 0) {\n        navigateRoot();\n        return;\n      }\n      state.currentFolderPath = state.currentFolderPath.slice(0, index + 1);\n      state.currentFolderId = state.currentFolderPath[state.currentFolderPath.length - 1].id;\n      renderFolders();\n    }\n\n    async function deriveAESKey(sessionId) {\n      const enc = new TextEncoder();\n      const baseKey = await crypto.subtle.importKey(\n        'raw', enc.encode(sessionId), { name: 'HKDF' }, false, ['deriveKey']\n      );\n      return await crypto.subtle.deriveKey(\n        {\n          name: 'HKDF',\n          hash: 'SHA-256',\n          salt: enc.encode('doctransit-v2'),\n          info: enc.encode('file-transfer')\n        },\n        baseKey,\n        { name: 'AES-GCM', length: 256 },\n        false,\n        ['encrypt', 'decrypt']\n      );\n    }\n\n    async function encryptChunk(plaintextBuffer, key, chunkIndex) {\n      const iv = new Uint8Array(12);\n      crypto.getRandomValues(iv);\n      const view = new DataView(iv.buffer);\n      view.setUint32(8, chunkIndex, false);\n\n      const ciphertext = await crypto.subtle.encrypt(\n        { name: 'AES-GCM', iv },\n        key,\n        plaintextBuffer\n      );\n\n      const combined = new Uint8Array(12 + ciphertext.byteLength);\n      combined.set(iv, 0);\n      combined.set(new Uint8Array(ciphertext), 12);\n      return combined.buffer;\n    }\n\n    async function decryptChunk(combinedBuffer, key, chunkIndex) {\n      const combined = new Uint8Array(combinedBuffer);\n      const iv = combined.slice(0, 12);\n      const view = new DataView(iv.buffer, iv.byteOffset, iv.byteLength);\n      const extractedIndex = view.getUint32(8, false);\n      const ciphertext = combined.slice(12);\n      const plaintext = await crypto.subtle.decrypt(\n        { name: 'AES-GCM', iv },\n        key,\n        ciphertext\n      );\n      return { chunkIndex: extractedIndex, plaintext };\n    }\n\n    function setupDropzone() {\n      const dz = document.getElementById('dropzone');\n      const fileInput = document.getElementById('file-input');\n\n      dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });\n      dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));\n      dz.addEventListener('drop', (e) => {\n        e.preventDefault();\n        dz.classList.remove('dragover');\n        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {\n          queueFiles(Array.from(e.dataTransfer.files));\n        }\n      });\n\n      fileInput.addEventListener('change', (e) => {\n        if (fileInput.files && fileInput.files.length > 0) {\n          queueFiles(Array.from(fileInput.files));\n          fileInput.value = '';\n        }\n      });\n    }\n\n    function queueFiles(files) {\n      if (state.phase !== 'paired' && state.phase !== 'transferring') return;\n      const validFiles = files.filter(f => {\n        if (!f.type && f.size === 0) {\n          alert(`Folders are not supported directly. Please drop individual files or zip the folder.`);\n          return false;\n        }\n        if (f.size > 500 * 1024 * 1024) {\n          console.warn(`File ${f.name} is too large. Maximum size is 500MB.`);\n          alert(`File ${f.name} is too large. Maximum size is 500MB.`);\n          return false;\n        }\n        return true;\n      });\n      if (validFiles.length === 0) return;\n      \n      state.sendQueue.push(...validFiles);\n      if (state.phase === 'paired' && !state.currentTransfer) {\n        processNextInQueue();\n      } else {\n        updateQueueDisplay();\n      }\n    }\n\n    function updateQueueDisplay() {\n      const qs = document.getElementById('queue-status');\n      if (qs && state.sendQueue.length > 0) {\n        qs.innerText = `${state.sendQueue.length} MORE FILE(S) WAITING IN QUEUE...`;\n      } else if (qs) {\n        qs.innerText = 'E2E ENCRYPTED · SAVES DIRECTLY TO TARGET DIRECTORY';\n      }\n    }\n\n    function processNextInQueue() {\n      if (state.sendQueue.length === 0) {\n        setPhase('paired');\n        updateQueueDisplay();\n        return;\n      }\n      const file = state.sendQueue.shift();\n      updateQueueDisplay();\n      initiateSendFile(file);\n    }\n\n    function initiateSendFile(file) {\n      if (state.phase !== 'paired' && state.phase !== 'transferring') return;\n      const totalChunks = Math.max(1, Math.ceil(file.size / (512 * 1024)));\n      \n      state.currentTransfer = {\n        direction: 'sending',\n        file: file,\n        filename: file.name,\n        size: file.size,\n        total_chunks: totalChunks,\n        sentChunks: 0,\n        pendingAck: null\n      };\n\n      setPhase('transferring');\n      updateProgressDisplay(file.name, file.size, 0);\n\n      state.ws.send(JSON.stringify({\n        type: 'transfer_init',\n        filename: file.name,\n        size: file.size,\n        total_chunks: totalChunks,\n        folder_id: state.currentFolderId,\n        mime_type: file.type || 'application/octet-stream'\n      }));\n    }\n\n    async function startSendingChunks() {\n      if (!state.currentTransfer || state.currentTransfer.direction !== 'sending') return;\n      sendNextChunk(0);\n    }\n\n    async function sendNextChunk(chunkIndex) {\n      const transfer = state.currentTransfer;\n      if (!transfer || chunkIndex >= transfer.total_chunks) {\n        state.currentTransfer = null;\n        if (state.sendQueue.length > 0) {\n          processNextInQueue();\n        } else {\n          setPhase('paired');\n          updateQueueDisplay();\n          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (LAST SENT: ${transfer ? transfer.filename : 'FILE'})`);\n        }\n        return;\n      }\n\n      let arrayBuffer, encrypted;\n      try {\n        const offset = chunkIndex * 512 * 1024;\n        const slice = transfer.file.slice(offset, offset + 512 * 1024);\n        arrayBuffer = await slice.arrayBuffer();\n        encrypted = await encryptChunk(arrayBuffer, state.cryptoKey, chunkIndex);\n      } catch (err) {\n        console.error(\"Failed to read or encrypt chunk:\", err);\n        state.currentTransfer = null;\n        if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n          state.ws.send(JSON.stringify({ type: 'cancelled' }));\n        }\n        if (state.sendQueue.length > 0) {\n          processNextInQueue();\n        } else {\n          setPhase('paired');\n          updateQueueDisplay();\n          setStatus(true, `CONNECTED: ${state.connectedDevice ? state.connectedDevice.toUpperCase() : ''} (ERROR READING FILE)`);\n        }\n        return;\n      }\n\n      transfer.pendingAck = chunkIndex;\n      if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n        state.ws.send(encrypted);\n      }\n      \n      if (state.senderStallTimer) clearTimeout(state.senderStallTimer);\n      state.senderStallTimer = setTimeout(() => {\n        if (state.currentTransfer && state.currentTransfer.direction === 'sending') {\n          console.warn(`Sender stalled waiting for ACK on chunk ${chunkIndex}`);\n          state.currentTransfer = null;\n          if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n            state.ws.send(JSON.stringify({ type: 'cancelled' }));\n          }\n          if (state.sendQueue.length > 0) {\n            processNextInQueue();\n          } else {\n            setPhase('paired');\n            updateQueueDisplay();\n            setStatus(true, `CONNECTED: ${state.connectedDevice ? state.connectedDevice.toUpperCase() : ''} (STALLED)`);\n          }\n        }\n      }, 15000);\n    }\n\n    function handleAck(chunkIndex) {\n      if (state.senderStallTimer) {\n        clearTimeout(state.senderStallTimer);\n        state.senderStallTimer = null;\n      }\n      const transfer = state.currentTransfer;\n      if (!transfer || transfer.direction !== 'sending') return;\n      \n      state.expirySeconds = 240;\n      updateTimerDisplay();\n\n      transfer.sentChunks++;\n      const pct = Math.min(100, Math.round((transfer.sentChunks / transfer.total_chunks) * 100));\n      updateProgressDisplay(transfer.filename, transfer.size, pct);\n\n      sendNextChunk(chunkIndex + 1);\n    }\n\n    async function handleIncomingBinaryChunk(buffer) {\n      const transfer = state.currentTransfer;\n      if (!transfer || transfer.direction !== 'receiving') return;\n\n      state.expirySeconds = 240;\n      updateTimerDisplay();\n\n      let idx = transfer.receivedChunks;\n      try {\n        const result = await decryptChunk(buffer, state.cryptoKey, transfer.receivedChunks);\n        idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : transfer.receivedChunks;\n        transfer.chunksData[idx] = new Blob([result.plaintext]);\n        \n        let receivedCount = 0;\n        for (let i = 0; i < transfer.total_chunks; i++) {\n          if (transfer.chunksData[i] != null) receivedCount++;\n        }\n        transfer.receivedChunks = receivedCount;\n\n        const pct = Math.min(100, Math.round((receivedCount / transfer.total_chunks) * 100));\n        updateProgressDisplay(transfer.filename, transfer.size, pct);\n\n        if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n          state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));\n        }\n      } catch (err) {\n        console.error('Failed to decrypt incoming chunk:', err);\n        state.currentTransfer = null;\n        if (state.transferStallTimer) {\n          clearTimeout(state.transferStallTimer);\n          state.transferStallTimer = null;\n        }\n        if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n          state.ws.send(JSON.stringify({ type: 'cancelled' }));\n        }\n        if (state.sendQueue.length > 0) {\n          processNextInQueue();\n        } else {\n          setPhase('paired');\n          updateQueueDisplay();\n          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (ERROR)`);\n        }\n        return;\n      }\n\n      // Fix 4: Transfer stall timer watchdog\n      if (state.transferStallTimer) clearTimeout(state.transferStallTimer);\n      state.transferStallTimer = setTimeout(() => {\n        if (state.currentTransfer && state.currentTransfer.direction === 'receiving') {\n          const received = state.currentTransfer.receivedChunks;\n          const total = state.currentTransfer.total_chunks;\n          console.warn(`Transfer stalled at ${received}/${total} chunks`);\n          state.currentTransfer = null;\n          if (state.transferStallTimer) {\n            clearTimeout(state.transferStallTimer);\n            state.transferStallTimer = null;\n          }\n          if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n            state.ws.send(JSON.stringify({ type: 'cancelled' }));\n          }\n          if (state.sendQueue.length > 0) {\n            processNextInQueue();\n          } else {\n            setPhase('paired');\n            updateQueueDisplay();\n            setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (STALLED — RETRY)`);\n          }\n        }\n      }, 15000);\n\n      if (transfer.receivedChunks >= transfer.total_chunks) {\n        const t = state.currentTransfer;\n        if (!t || t.direction !== 'receiving') return;\n\n        const validChunks = t.chunksData.filter(Boolean);\n\n        if (validChunks.length !== t.total_chunks) {\n          // Still missing chunks — show error and reset\n          console.error(`Missing chunks: got ${validChunks.length}/${t.total_chunks}`);\n          state.currentTransfer = null;\n          if (state.sendQueue.length > 0) {\n            processNextInQueue();\n          } else {\n            setPhase('paired');\n            updateQueueDisplay();\n          }\n          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (TRANSFER INCOMPLETE — RETRY)`);\n          return;\n        }\n\n        // Clear stall timer on successful completion\n        if (state.transferStallTimer) {\n          clearTimeout(state.transferStallTimer);\n          state.transferStallTimer = null;\n        }\n\n        const finalBlob = new Blob(validChunks, { type: t.mime_type });\n        t.chunksData = null;\n\n        if (t.filename === 'message.txt' && t.size < 50 * 1024) {\n          finalBlob.text().then(text => {\n            appendChatMessage('PEER', text);\n            state.currentTransfer = null;\n            if (state.sendQueue.length > 0) {\n              processNextInQueue();\n            } else {\n              setPhase('paired');\n              updateQueueDisplay();\n              setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (LAST RECEIVED: ${t.filename})`);\n            }\n          });\n          return;\n        }\n\n        const blobUrl = URL.createObjectURL(finalBlob);\n        state.receivedFiles = state.receivedFiles || [];\n        state.receivedFiles.push({\n          filename: t.filename,\n          size: t.size,\n          mimeType: t.mime_type,\n          blobUrl: blobUrl\n        });\n        currentReceivedViewIndex = state.receivedFiles.length - 1; // Auto-show the newest file\n        renderReceivedFiles();\n        \n        // Debug alert to confirm PC received it\n\n\n        state.currentTransfer = null;\n        if (state.sendQueue.length > 0) {\n          processNextInQueue();\n        } else {\n          setPhase('paired');\n          updateQueueDisplay();\n          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (RECEIVED: ${t.filename})`);\n          const sec = document.getElementById('received-files-section');\n          if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });\n        }\n        return;\n      }\n    }\n\n    let currentReceivedViewIndex = 0;\n\n    function navReceivedFiles(dir) {\n      currentReceivedViewIndex += dir;\n      renderReceivedFiles();\n    }\n\n    async function downloadAllReceived() {\n      if (!state.receivedFiles || state.receivedFiles.length === 0) return;\n      \n      const buttons = document.querySelectorAll('button[onclick=\"downloadAllReceived()\"]');\n      buttons.forEach(btn => {\n        btn.innerText = '[ ZIPPING... ]';\n        btn.style.opacity = '0.5';\n        btn.style.pointerEvents = 'none';\n      });\n\n      try {\n        const zipData = {};\n        for (let i = 0; i < state.receivedFiles.length; i++) {\n          const f = state.receivedFiles[i];\n          let filename = f.filename;\n          \n          // Ensure unique filenames in the ZIP\n          while (zipData[filename]) {\n            const parts = filename.split('.');\n            if (parts.length > 1) {\n              const ext = parts.pop();\n              filename = parts.join('.') + `_${i}.` + ext;\n            } else {\n              filename = filename + `_${i}`;\n            }\n          }\n          \n          const res = await fetch(f.blobUrl);\n          const buf = await res.arrayBuffer();\n          zipData[filename] = new Uint8Array(buf);\n        }\n\n        const zipped = window.fflate.zipSync(zipData);\n        const blob = new Blob([zipped], { type: 'application/zip' });\n        const url = URL.createObjectURL(blob);\n        \n        const a = document.createElement('a');\n        a.href = url;\n        const timestamp = new Date().getTime();\n        a.download = `LabBridge_Transfer_${timestamp}.zip`;\n        document.body.appendChild(a);\n        a.click();\n        document.body.removeChild(a);\n        \n        setTimeout(() => URL.revokeObjectURL(url), 10000);\n      } catch (err) {\n        console.error(\"Zip failed:\", err);\n        alert(\"Failed to zip files. Please download them individually.\");\n      } finally {\n        buttons.forEach(btn => {\n          btn.innerText = '[ DOWNLOAD ALL ]';\n          btn.style.opacity = '1';\n          btn.style.pointerEvents = 'auto';\n        });\n      }\n    }\n\n    function deleteReceivedFile(index) {\n      if (!state.receivedFiles || index < 0 || index >= state.receivedFiles.length) return;\n      const file = state.receivedFiles[index];\n      if (file && file.blobUrl) {\n        try { URL.revokeObjectURL(file.blobUrl); } catch (e) {}\n      }\n      state.receivedFiles.splice(index, 1);\n      if (currentReceivedViewIndex >= state.receivedFiles.length) {\n        currentReceivedViewIndex = Math.max(0, state.receivedFiles.length - 1);\n      }\n      renderReceivedFiles();\n    }\n\n    function renderReceivedFiles() {\n      const section = document.getElementById('received-files-section');\n      const list = document.getElementById('received-files-list');\n      if (!section || !list) return;\n      if (!state.receivedFiles || state.receivedFiles.length === 0) {\n        section.style.display = 'none';\n        return;\n      }\n      section.style.display = 'block';\n      list.innerHTML = '';\n\n      if (currentReceivedViewIndex >= state.receivedFiles.length) {\n        currentReceivedViewIndex = state.receivedFiles.length - 1;\n      }\n      if (currentReceivedViewIndex < 0) currentReceivedViewIndex = 0;\n\n      const f = state.receivedFiles[currentReceivedViewIndex];\n      const isImage = (f.mimeType && f.mimeType.startsWith('image/')) || f.filename.match(/\\\\.(jpg|jpeg|png|gif|webp|heic|bmp)$/i);\n      \n      let imgHtml = '';\n      if (isImage) {\n        imgHtml = `<div style=\"margin-bottom: 12px; text-align: center; background: var(--surface-2); padding: 8px; border: 1px solid var(--border);\">\n          <img src=\"${f.blobUrl}\" alt=\"${f.filename}\" onclick=\"openPhotoLightbox(${currentReceivedViewIndex})\" style=\"max-height: 240px; max-width: 100%; border: 1px solid var(--border); object-fit: contain; cursor: pointer; transition: transform 0.15s;\" />\n        </div>`;\n      } else {\n        imgHtml = `<div style=\"margin-bottom: 12px; height: 120px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); font-family: var(--mono); font-size: 12px;\">\n          [ NO PREVIEW AVAILABLE ]\n        </div>`;\n      }\n\n      const escapeHtml = (text) => {\n        const div = document.createElement('div');\n        div.textContent = text;\n        return div.innerHTML;\n      };\n      const safeFilename = escapeHtml(f.filename);\n      const hasMultiple = state.receivedFiles.length > 1;\n\n      list.innerHTML = `\n        <div class=\"received-item\" style=\"padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 0; margin-top: 10px; font-family: var(--mono);\">\n          ${hasMultiple ? `\n            <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;\">\n              <button onclick=\"navReceivedFiles(-1)\" style=\"background: transparent; border: 1px solid var(--border); color: white; padding: 6px 12px; cursor: pointer; font-family: var(--mono); font-weight: bold; font-size: 11px;\" ${currentReceivedViewIndex === 0 ? 'opacity:0.5; pointer-events:none;' : ''}>&lt; PREV</button>\n              <span style=\"font-size: 11px; color: var(--text-2);\">FILE ${currentReceivedViewIndex + 1} OF ${state.receivedFiles.length}</span>\n              <button onclick=\"navReceivedFiles(1)\" style=\"background: transparent; border: 1px solid var(--border); color: white; padding: 6px 12px; cursor: pointer; font-family: var(--mono); font-weight: bold; font-size: 11px;\" ${currentReceivedViewIndex === state.receivedFiles.length - 1 ? 'opacity:0.5; pointer-events:none;' : ''}>NEXT &gt;</button>\n            </div>\n          ` : ''}\n          ${imgHtml}\n          <div style=\"text-align: center; margin-bottom: 16px;\">\n            <strong style=\"font-size: 13px; color: #fff; word-break: break-all;\">${safeFilename}</strong><br />\n            <span style=\"font-size: 11px; color: var(--text-2);\">${formatSize(f.size)}</span>\n          </div>\n          <div style=\"display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;\">\n            <a href=\"${f.blobUrl}\" download=\"${safeFilename}\" style=\"background: #FFFFFF; color: #000000; border: 1px solid var(--border); text-decoration: none; padding: 9px 18px; border-radius: 0; font-size: 11px; font-weight: 800; font-family: var(--mono); white-space: nowrap; cursor: pointer; display: inline-block;\">[ DOWNLOAD ]</a>\n            <button onclick=\"deleteReceivedFile(${currentReceivedViewIndex})\" style=\"background: transparent; color: #EF4444; border: 1px solid #EF4444; padding: 9px 18px; border-radius: 0; font-size: 11px; font-weight: 800; font-family: var(--mono); white-space: nowrap; cursor: pointer;\">[ DELETE ]</button>\n            ${hasMultiple ? `<button onclick=\"downloadAllReceived()\" style=\"background: transparent; color: #FFFFFF; border: 1px solid var(--border); padding: 9px 18px; border-radius: 0; font-size: 11px; font-weight: 800; font-family: var(--mono); white-space: nowrap; cursor: pointer;\">[ DOWNLOAD ALL ]</button>` : ''}\n          </div>\n        </div>\n      `;\n\n      const previewAllBtn = document.getElementById('btn-preview-all');\n      if (previewAllBtn) {\n        state.photoIndices = [];\n        state.receivedFiles.forEach((f2, idx2) => {\n          const isImg2 = (f2.mimeType && f2.mimeType.startsWith('image/')) || f2.filename.match(/\\.(jpg|jpeg|png|gif|webp|heic|bmp)$/i);\n          if (isImg2) state.photoIndices.push(idx2);\n        });\n        if (state.photoIndices.length > 0) {\n          previewAllBtn.style.display = 'inline-block';\n          previewAllBtn.innerText = `[ PREVIEW ALL PHOTOS (${state.photoIndices.length}) ]`;\n        } else {\n          previewAllBtn.style.display = 'none';\n        }\n      }\n    }\n\n    let currentLightboxIndex = 0;\n\n    function openPhotoLightbox(index) {\n      if (!state.receivedFiles || state.receivedFiles.length === 0) return;\n      currentLightboxIndex = index;\n      if (currentLightboxIndex < 0) currentLightboxIndex = 0;\n      if (currentLightboxIndex >= state.receivedFiles.length) currentLightboxIndex = state.receivedFiles.length - 1;\n      updatePhotoLightboxView();\n      document.getElementById('photo-lightbox').style.display = 'flex';\n      window.addEventListener('keydown', handlePhotoLightboxKey);\n    }\n\n    function updatePhotoLightboxView() {\n      const item = state.receivedFiles[currentLightboxIndex];\n      if (!item) return;\n\n      document.getElementById('lightbox-counter').innerText = `${currentLightboxIndex + 1} / ${state.receivedFiles.length}`;\n      document.getElementById('lightbox-title').innerText = item.filename;\n\n      const dlBtn = document.getElementById('lightbox-download-btn');\n      dlBtn.href = item.blobUrl;\n      dlBtn.download = item.filename;\n\n      const isImage = (item.mimeType && item.mimeType.startsWith('image/')) || item.filename.match(/\\.(jpg|jpeg|png|gif|webp|heic|bmp)$/i);\n      const imgEl = document.getElementById('lightbox-image');\n      const nonImgEl = document.getElementById('lightbox-nonimage');\n\n      if (isImage) {\n        imgEl.src = item.blobUrl;\n        imgEl.style.display = 'block';\n        nonImgEl.style.display = 'none';\n      } else {\n        imgEl.style.display = 'none';\n        nonImgEl.style.display = 'block';\n        document.getElementById('lightbox-nonimage-name').innerText = item.filename;\n        const nonImgDl = document.getElementById('lightbox-nonimage-download');\n        nonImgDl.href = item.blobUrl;\n        nonImgDl.download = item.filename;\n      }\n\n      const strip = document.getElementById('lightbox-thumb-strip');\n      if (strip) {\n        strip.innerHTML = '';\n        state.receivedFiles.forEach((f, idx) => {\n          const thumbIsImg = (f.mimeType && f.mimeType.startsWith('image/')) || f.filename.match(/\\.(jpg|jpeg|png|gif|webp|heic|bmp)$/i);\n          if (thumbIsImg) {\n            const img = document.createElement('img');\n            img.className = 'thumb-item' + (idx === currentLightboxIndex ? ' active' : '');\n            img.src = f.blobUrl;\n            img.onclick = () => {\n              currentLightboxIndex = idx;\n              updatePhotoLightboxView();\n            };\n            strip.appendChild(img);\n          }\n        });\n      }\n    }\n\n    function changePhotoLightbox(delta) {\n      if (!state.receivedFiles || state.receivedFiles.length === 0) return;\n      currentLightboxIndex += delta;\n      if (currentLightboxIndex < 0) currentLightboxIndex = state.receivedFiles.length - 1;\n      if (currentLightboxIndex >= state.receivedFiles.length) currentLightboxIndex = 0;\n      updatePhotoLightboxView();\n    }\n\n    function closePhotoLightbox() {\n      window.removeEventListener('keydown', handlePhotoLightboxKey);\n      document.getElementById('photo-lightbox').style.display = 'none';\n      window.removeEventListener('keydown', handlePhotoLightboxKey);\n    }\n\n    function handlePhotoLightboxKey(e) {\n      if (e.key === 'ArrowLeft') changePhotoLightbox(-1);\n      if (e.key === 'ArrowRight') changePhotoLightbox(1);\n      if (e.key === 'Escape') closePhotoLightbox();\n    }\n\n    function cancelTransfer() {\n      if (state.ws && state.ws.readyState === WebSocket.OPEN) {\n        state.ws.send(JSON.stringify({ type: 'cancelled' }));\n      }\n      resetToPaired();\n    }\n\n    function resetToPaired() {\n      state.currentTransfer = null;\n      if (state.sendQueue.length > 0) {\n        processNextInQueue();\n      } else {\n        setPhase('paired');\n        updateQueueDisplay();\n      }\n    }\n\n    function updateProgressDisplay(filename, size, pct) {\n      document.getElementById('transfer-filename').innerText = filename;\n      document.getElementById('transfer-size').innerText = formatSize(size);\n      document.getElementById('transfer-pct').innerText = `${pct}%`;\n      const prog = document.getElementById('transfer-progress');\n      if (prog) prog.value = pct;\n      const fillBar = document.getElementById('progress-fill-bar');\n      if (fillBar) fillBar.style.width = pct + '%';\n    }\n\n    function formatSize(bytes) {\n      if (!bytes || bytes <= 0 || isNaN(bytes)) return '0 B';\n      if (bytes < 1024) return bytes + ' B';\n      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';\n      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';\n    }\n\n    const phoneState = {\n      sessionId: null,\n      ws: null,\n      cryptoKey: null,\n      currentTransfer: null,\n      sendQueue: [],\n      receivedFiles: [],\n      videoStream: null,\n      scanFrameId: null\n    };\n\n    function initPhoneMode() {\n      const pcEl = document.getElementById('pc-mode-container');\n      const phoneEl = document.getElementById('phone-mode-container');\n      if (pcEl) pcEl.style.display = 'none';\n      if (phoneEl) phoneEl.style.display = 'flex';\n\n      if (/android/i.test(navigator.userAgent)) {\n        const btn = document.getElementById('android-apk-btn');\n        if (btn) btn.style.display = 'block';\n      }\n\n      const params = new URLSearchParams(window.location.search);\n      const s = params.get('s');\n      const e = params.get('e');\n      if (s && /^[a-zA-Z0-9]{12}$/.test(s)) {\n        if (e && parseInt(e, 10) < Date.now()) {\n          alert(\"QR/Link expired. Please scan a fresh QR code from PC terminal.\");\n          phoneShowScreen('scanner');\n          phoneStartCamera();\n          return;\n        }\n        phoneProceedToConnected(s);\n      } else {\n        const saved = localStorage.getItem('doctransit_phone_session_id');\n        if (saved) {\n          phoneProceedToConnected(saved);\n        } else {\n          phoneShowScreen('scanner');\n          phoneStartCamera();\n        }\n      }\n    }\n\n    function phoneShowScreen(screenName) {\n      const sc = document.getElementById('phone-screen-scanner');\n      const co = document.getElementById('phone-screen-connected');\n      const dn = document.getElementById('phone-screen-done');\n      if (sc) sc.style.display = (screenName === 'scanner') ? 'flex' : 'none';\n      if (co) co.style.display = (screenName === 'connected') ? 'flex' : 'none';\n      if (dn) dn.style.display = (screenName === 'done') ? 'flex' : 'none';\n    }\n\n    async function phoneStartCamera() {\n      const video = document.getElementById('phone-video');\n      const msg = document.getElementById('phone-camera-msg');\n      if (msg) msg.style.display = 'block';\n      try {\n        phoneState.videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });\n        if (video) {\n          video.srcObject = phoneState.videoStream;\n          video.setAttribute('playsinline', true);\n          video.play();\n          if (msg) msg.style.display = 'none';\n          phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);\n        }\n      } catch (err) {\n        console.warn(\"Camera permission blocked or unavailable:\", err);\n        if (msg) msg.innerText = \"Camera access denied. Please enter the 12-character ID manually above.\";\n      }\n    }\n\n    function phoneStopCamera() {\n      if (phoneState.scanFrameId) {\n        cancelAnimationFrame(phoneState.scanFrameId);\n        phoneState.scanFrameId = null;\n      }\n      if (phoneState.videoStream) {\n        phoneState.videoStream.getTracks().forEach(track => track.stop());\n        phoneState.videoStream = null;\n      }\n    }\n\n    function phoneScanLoop() {\n      const video = document.getElementById('phone-video');\n      if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {\n        phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);\n        return;\n      }\n      // Reuse a single canvas to avoid GC pressure on every frame (BUG-08 fix)\n      if (!window._scanCanvas) {\n        window._scanCanvas = document.createElement('canvas');\n        window._scanCtx = window._scanCanvas.getContext('2d');\n      }\n      const canvas = window._scanCanvas;\n      const ctx = window._scanCtx;\n      canvas.width = video.videoWidth;\n      canvas.height = video.videoHeight;\n      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);\n      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);\n      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: \"attemptBoth\" });\n\n      if (code && code.data) {\n        let sessionId = null;\n        try {\n          const parsed = JSON.parse(code.data);\n          if (parsed && parsed.s) {\n            if (parsed.e && parsed.e < Date.now()) {\n              alert(\"QR code expired. Please refresh the PC terminal.\");\n              phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);\n              return;\n            }\n            sessionId = parsed.s;\n          }\n        } catch (e) {\n          try {\n            const url = new URL(code.data);\n            const sParam = url.searchParams.get('s');\n            const eParam = url.searchParams.get('e');\n            if (sParam) {\n              if (eParam && parseInt(eParam, 10) < Date.now()) {\n                alert(\"QR code expired. Please refresh the PC terminal.\");\n                phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);\n                return;\n              }\n              sessionId = sParam;\n            }\n          } catch (e2) {\n            if (/^[a-zA-Z0-9]{12}$/.test(code.data.trim())) {\n              sessionId = code.data.trim();\n            }\n          }\n        }\n\n        if (sessionId) {\n          phoneStopCamera();\n          phoneProceedToConnected(sessionId);\n          return;\n        }\n      }\n      phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);\n    }\n\n    function phoneConnectManual() {\n      const input = document.getElementById('phone-manual-id');\n      if (!input) return;\n      const val = input.value.trim();\n      if (!/^[a-zA-Z0-9]{12}$/.test(val)) {\n        alert(\"Please enter a valid 12-character Session ID\");\n        return;\n      }\n      phoneStopCamera();\n      phoneProceedToConnected(val);\n    }\n\n    async function phoneProceedToConnected(sessionId) {\n      phoneState.sessionId = sessionId;\n      localStorage.setItem('doctransit_phone_session_id', sessionId);\n      phoneShowScreen('connected');\n      const infoEl = document.getElementById('phone-session-info');\n      if (infoEl) infoEl.innerText = `SESSION ID: ${sessionId}`;\n      phoneSetStatus(false, 'CONNECTING TO PC TERMINAL...');\n\n      try {\n        phoneState.cryptoKey = await deriveAESKey(sessionId);\n      } catch (e) {\n        console.error(\"Failed to derive encryption key on phone:\", e);\n      }\n\n      if (phoneState.ws) {\n        const old = phoneState.ws;\n        old.onclose = null;\n        try { old.close(); } catch (e) {}\n      }\n\n      const wsUrl = WORKER_URL.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');\n      const ws = new WebSocket(`${wsUrl}/session/${sessionId}/phone`);\n      ws.binaryType = 'arraybuffer';\n      phoneState.ws = ws;\n\n      ws.onopen = () => {\n        phoneSetStatus(true, 'CONNECTED TO PC TERMINAL');\n      };\n\n      ws.onmessage = async (event) => {\n        if (typeof event.data === 'string') {\n          const msg = JSON.parse(event.data);\n        if (msg.type === 'transfer_init' && (!msg.total_chunks || msg.total_chunks <= 0)) {\n          console.error('Invalid transfer_init: total_chunks must be > 0');\n          if (phoneState.ws) phoneState.ws.send(JSON.stringify({ type: 'error', message: 'Invalid transfer size' }));\n          return;\n        }\n          phoneHandleTextMessage(msg);\n        } else {\n          let buffer = event.data;\n          if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();\n          await phoneHandleIncomingBinaryChunk(buffer);\n        }\n      };\n\n      ws.onclose = () => {\n        phoneSetStatus(false, 'DISCONNECTED');\n      };\n    }\n\n    function phoneSetStatus(active, text) {\n      const dot = document.getElementById('phone-status-dot');\n      const txt = document.getElementById('phone-status-text');\n      if (dot) {\n        if (active) dot.classList.add('active');\n        else dot.classList.remove('active');\n      }\n      if (txt) txt.innerText = text;\n    }\n\n    function phoneHandleTextMessage(msg) {\n      if (msg.type === 'paired') {\n        phoneSetStatus(true, 'CONNECTED TO PC TERMINAL');\n      } else if (msg.type === 'ready') {\n        if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {\n          phoneStartSendingChunks();\n        }\n      } else if (msg.type === 'text_message') {\n        appendChatMessage('PEER', msg.text);\n      } else if (msg.type === 'ack') {\n        if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {\n          phoneHandleAck(msg.chunk_index);\n        }\n      } else if (msg.type === 'transfer_init') {\n        phoneState.currentTransfer = {\n          direction: 'receiving',\n          filename: msg.filename || 'received_file',\n          size: typeof msg.size === 'number' ? msg.size : 0,\n          total_chunks: typeof msg.total_chunks === 'number' ? msg.total_chunks : 0,\n          mime_type: msg.mime_type || 'application/octet-stream',\n          receivedChunks: 0,\n          chunksData: new Array(typeof msg.total_chunks === 'number' ? msg.total_chunks : 0)\n        };\n        document.getElementById('phone-transfer-area').style.display = 'flex';\n        document.getElementById('phone-dropzone').style.display = 'none';\n        phoneUpdateProgressDisplay(phoneState.currentTransfer.filename, phoneState.currentTransfer.size, 0);\n        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {\n          phoneState.ws.send(JSON.stringify({ type: 'ready' }));\n        }\n      } else if (msg.type === 'cancelled') {\n        alert('Transfer cancelled by PC terminal');\n        phoneResetToConnected();\n      }\n    }\n\n    async function phoneHandleIncomingBinaryChunk(buffer) {\n      const transfer = phoneState.currentTransfer;\n      if (!transfer || transfer.direction !== 'receiving') return;\n\n      try {\n        const result = await decryptChunk(buffer, phoneState.cryptoKey, transfer.receivedChunks);\n        const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : transfer.receivedChunks;\n        transfer.chunksData[idx] = new Blob([result.plaintext]);\n        \n        let receivedCount = 0;\n        for (let i = 0; i < transfer.total_chunks; i++) {\n          if (transfer.chunksData[i] != null) receivedCount++;\n        }\n        transfer.receivedChunks = receivedCount;\n\n        const pct = Math.min(100, Math.round((receivedCount / transfer.total_chunks) * 100));\n        phoneUpdateProgressDisplay(transfer.filename, transfer.size, pct);\n\n        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {\n          phoneState.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));\n        }\n\n        if (receivedCount >= transfer.total_chunks) {\n          const finalBlob = new Blob(transfer.chunksData, { type: transfer.mime_type });\n          transfer.chunksData = null;\n\n          if (transfer.filename === 'message.txt' && transfer.size < 50 * 1024) {\n            const text = await finalBlob.text();\n            appendChatMessage('PEER', text);\n            phoneState.currentTransfer = null;\n            phoneShowScreen('connected');\n            document.getElementById('phone-dropzone').style.display = 'flex';\n            document.getElementById('phone-transfer-area').style.display = 'none';\n            return;\n          }\n\n          const blobUrl = URL.createObjectURL(finalBlob);\n\n          try {\n            const a = document.createElement('a');\n            a.href = blobUrl;\n            a.download = transfer.filename;\n            document.body.appendChild(a);\n            a.click();\n            document.body.removeChild(a);\n          } catch (e) {}\n\n          const downloadBtn = document.getElementById('phone-download-btn');\n          if (downloadBtn) {\n            downloadBtn.href = blobUrl;\n            downloadBtn.download = transfer.filename;\n          }\n\n          phoneState.currentTransfer = null;\n          phoneShowScreen('done');\n          document.getElementById('phone-done-message').innerText = 'RECEIVED FROM PC!';\n          document.getElementById('phone-done-subtext').innerText = transfer.filename;\n        }\n      } catch (err) {\n        console.error('Failed to decrypt incoming chunk on phone:', err);\n        phoneState.currentTransfer = null;\n        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {\n          phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));\n        }\n        if (phoneState.sendQueue.length > 0) {\n          phoneProcessNextInQueue();\n        } else {\n          phoneShowScreen('connected');\n          document.getElementById('phone-status-text').innerText = 'ERROR (DECRYPTION)';\n        }\n      }\n    }\n\n    function phoneHandleFilesSelected(event) {\n      const files = event.target.files ? Array.from(event.target.files) : [];\n      if (files.length === 0) return;\n      phoneState.sendQueue.push(...files);\n      event.target.value = '';\n      if (!phoneState.currentTransfer) {\n        phoneProcessNextInQueue();\n      }\n    }\n\n    function phoneProcessNextInQueue() {\n      if (phoneState.sendQueue.length === 0) {\n        phoneResetToConnected();\n        return;\n      }\n      const file = phoneState.sendQueue.shift();\n      phoneInitiateSendFile(file);\n    }\n\n    function phoneInitiateSendFile(file) {\n      const totalChunks = Math.max(1, Math.ceil(file.size / (512 * 1024)));\n      phoneState.currentTransfer = {\n        direction: 'sending',\n        file: file,\n        filename: file.name,\n        size: file.size,\n        total_chunks: totalChunks,\n        sentChunks: 0\n      };\n\n      document.getElementById('phone-dropzone').style.display = 'none';\n      document.getElementById('phone-transfer-area').style.display = 'flex';\n      phoneUpdateProgressDisplay(file.name, file.size, 0);\n\n      if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {\n        phoneState.ws.send(JSON.stringify({\n          type: 'transfer_init',\n          filename: file.name,\n          size: file.size,\n          total_chunks: totalChunks,\n          mime_type: file.type || 'application/octet-stream'\n        }));\n      }\n    }\n\n    async function phoneStartSendingChunks() {\n      if (!phoneState.currentTransfer || phoneState.currentTransfer.direction !== 'sending') return;\n      phoneSendNextChunk(0);\n    }\n\n    async function phoneSendNextChunk(chunkIndex) {\n      const transfer = phoneState.currentTransfer;\n      if (!transfer || chunkIndex >= transfer.total_chunks) {\n        phoneState.currentTransfer = null;\n        if (phoneState.sendQueue.length > 0) {\n          phoneProcessNextInQueue();\n        } else {\n          phoneShowScreen('done');\n          document.getElementById('phone-done-message').innerText = 'SENT TO PC TERMINAL!';\n          document.getElementById('phone-done-subtext').innerText = transfer ? transfer.filename : 'File sent';\n        }\n        return;\n      }\n\n      let arrayBuffer, encrypted;\n      try {\n        const offset = chunkIndex * 512 * 1024;\n        const slice = transfer.file.slice(offset, offset + 512 * 1024);\n        arrayBuffer = await slice.arrayBuffer();\n        encrypted = await encryptChunk(arrayBuffer, phoneState.cryptoKey, chunkIndex);\n      } catch (err) {\n        console.error(\"Failed to read or encrypt chunk:\", err);\n        phoneState.currentTransfer = null;\n        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {\n          phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));\n        }\n        if (phoneState.sendQueue.length > 0) {\n          phoneProcessNextInQueue();\n        } else {\n          phoneShowScreen('connected');\n          document.getElementById('phone-status-text').innerText = 'ERROR READING FILE';\n        }\n        return;\n      }\n\n      if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {\n        phoneState.ws.send(encrypted);\n      }\n\n      if (phoneState.senderStallTimer) clearTimeout(phoneState.senderStallTimer);\n      phoneState.senderStallTimer = setTimeout(() => {\n        if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {\n          console.warn(`Phone sender stalled waiting for ACK on chunk ${chunkIndex}`);\n          phoneState.currentTransfer = null;\n          if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {\n            phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));\n          }\n          if (phoneState.sendQueue.length > 0) {\n            phoneProcessNextInQueue();\n          } else {\n            phoneShowScreen('connected');\n            document.getElementById('phone-status-text').innerText = 'STALLED - RETRY';\n          }\n        }\n      }, 15000);\n    }\n\n    function phoneHandleAck(chunkIndex) {\n      if (phoneState.senderStallTimer) {\n        clearTimeout(phoneState.senderStallTimer);\n        phoneState.senderStallTimer = null;\n      }\n      const transfer = phoneState.currentTransfer;\n      if (!transfer || transfer.direction !== 'sending') return;\n\n      transfer.sentChunks++;\n      const pct = Math.min(100, Math.round((transfer.sentChunks / transfer.total_chunks) * 100));\n      phoneUpdateProgressDisplay(transfer.filename, transfer.size, pct);\n\n      phoneSendNextChunk(chunkIndex + 1);\n    }\n\n    function phoneCancelTransfer() {\n      if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {\n        phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));\n      }\n      phoneResetToConnected();\n    }\n\n    function phoneResetToConnected() {\n      phoneState.currentTransfer = null;\n      if (phoneState.sendQueue.length > 0) {\n        phoneProcessNextInQueue();\n      } else {\n        phoneShowScreen('connected');\n        document.getElementById('phone-dropzone').style.display = 'flex';\n        document.getElementById('phone-transfer-area').style.display = 'none';\n      }\n    }\n\n    function phoneUpdateProgressDisplay(filename, size, pct) {\n      const title = document.getElementById('phone-transfer-title');\n      const nameEl = document.getElementById('phone-transfer-filename');\n      const pctEl = document.getElementById('phone-transfer-pct');\n      const progEl = document.getElementById('phone-transfer-progress');\n      if (title) title.innerText = (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') ? 'SENDING TO PC TERMINAL...' : 'RECEIVING FROM PC TERMINAL...';\n      if (nameEl) nameEl.innerText = filename;\n      if (pctEl) pctEl.innerText = `${pct}%`;\n      if (progEl) progEl.value = pct;\n      const phoneFill = document.getElementById('phone-transfer-bar');\n      if (phoneFill) phoneFill.style.width = pct + '%';\n    }\n\n    let currentChatRole = 'pc';\n    let unreadChatCount = 0;\n\n    function openChatModal(role) {\n      if (role) currentChatRole = role;\n      document.getElementById('chat-modal').style.display = 'flex';\n      unreadChatCount = 0;\n      updateChatBadges();\n      const input = document.getElementById('chat-modal-input');\n      if (input) input.focus();\n      const container = document.getElementById('chat-modal-messages');\n      if (container) container.scrollTop = container.scrollHeight;\n    }\n\n    function closeChatModal() {\n      document.getElementById('chat-modal').style.display = 'none';\n    }\n\n    function clearChatMessages() {\n      unreadChatCount = 0;\n      updateChatBadges();\n      closeChatModal();\n      const list = document.getElementById('chat-modal-messages');\n      if (list) {\n        list.innerHTML = '<div id=\"chat-empty-state\" style=\"margin: auto; color: var(--text-3); font-family: var(--mono); font-size: 12px; text-align: center;\">No messages in this session yet.</div>';\n      }\n    }\n\n    function updateChatBadges() {\n      const pcBadge = document.getElementById('pc-chat-badge');\n      const phoneBadge = document.getElementById('phone-chat-badge');\n      if (unreadChatCount > 0) {\n        if (pcBadge) { pcBadge.style.display = 'inline-block'; pcBadge.innerText = `${unreadChatCount} NEW`; }\n        if (phoneBadge) { phoneBadge.style.display = 'inline-block'; phoneBadge.innerText = `${unreadChatCount} NEW`; }\n      } else {\n        if (pcBadge) pcBadge.style.display = 'none';\n        if (phoneBadge) phoneBadge.style.display = 'none';\n      }\n    }\n\n    function appendChatMessage(sender, text) {\n      const emptyState = document.getElementById('chat-empty-state');\n      if (emptyState) emptyState.remove();\n\n      const list = document.getElementById('chat-modal-messages');\n      if (!list) return;\n\n      const isMe = sender === 'YOU';\n      const wrapper = document.createElement('div');\n      wrapper.style.display = 'flex';\n      wrapper.style.flexDirection = 'column';\n      wrapper.style.alignItems = isMe ? 'flex-end' : 'flex-start';\n      wrapper.style.width = '100%';\n\n      const tag = document.createElement('span');\n      tag.style.fontFamily = 'var(--mono)';\n      tag.style.fontSize = '10px';\n      tag.style.color = 'var(--text-3)';\n      tag.style.marginBottom = '4px';\n      tag.innerText = isMe ? '[ YOU ]' : '[ PEER ]';\n\n      const msgDiv = document.createElement('div');\n      msgDiv.style.padding = '10px 14px';\n      msgDiv.style.background = isMe ? 'var(--surface-2)' : '#18181B';\n      msgDiv.style.border = isMe ? '1px solid var(--border)' : '1px solid #3F3F46';\n      msgDiv.style.fontFamily = 'var(--mono)';\n      msgDiv.style.fontSize = '13px';\n      msgDiv.style.color = '#FFFFFF';\n      msgDiv.style.whiteSpace = 'pre-wrap';\n      msgDiv.style.maxWidth = '85%';\n      msgDiv.style.wordBreak = 'break-word';\n      msgDiv.style.borderRadius = '0';\n      msgDiv.textContent = text;\n\n      const copyBtn = document.createElement('button');\n      copyBtn.innerText = '[ COPY ]';\n      copyBtn.style.marginTop = '4px';\n      copyBtn.style.background = 'transparent';\n      copyBtn.style.border = 'none';\n      copyBtn.style.color = 'var(--text-2)';\n      copyBtn.style.fontSize = '10px';\n      copyBtn.style.fontFamily = 'var(--mono)';\n      copyBtn.style.cursor = 'pointer';\n      copyBtn.style.padding = '0';\n      copyBtn.onclick = (e) => {\n        e.stopPropagation();\n        navigator.clipboard.writeText(text);\n        copyBtn.innerText = '[ COPIED! ]';\n        setTimeout(() => { copyBtn.innerText = '[ COPY ]'; }, 1500);\n      };\n\n      wrapper.appendChild(tag);\n      wrapper.appendChild(msgDiv);\n      wrapper.appendChild(copyBtn);\n      list.appendChild(wrapper);\n\n      setTimeout(() => {\n        list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });\n      }, 50);\n\n      const modal = document.getElementById('chat-modal');\n      if (!modal || modal.style.display === 'none') {\n        if (!isMe) {\n          unreadChatCount++;\n          updateChatBadges();\n        }\n      }\n    }\n\n    function sendModalChatMessage() {\n      const input = document.getElementById('chat-modal-input');\n      if (!input) return;\n      const text = input.value.trim();\n      if (!text) return;\n\n      const socket = currentChatRole === 'phone' ? phoneState.ws : state.ws;\n      if (socket && socket.readyState === WebSocket.OPEN) {\n        socket.send(JSON.stringify({ type: 'text_message', text: text }));\n        appendChatMessage('YOU', text);\n      }\n      input.value = '';\n    }\n  </script>\n</body>\n</html>\n";
+export const INDEX_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DocTransit — Seamless File Transfer</title>
+  <meta name="description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
+  <meta property="og:title" content="DocTransit">
+  <meta property="og:description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
+  <meta property="og:image" content="https://doctransit.in/preview.jpg">
+  <meta property="og:url" content="https://doctransit.in/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="/icon.png" />
+  <script src="/fflate.min.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DocTransit" />
+  <script src="qr.min.js"></script>
+  <script src="jsQR.min.js"></script>
+  <style>
+    :root {
+      --bg:           #000000;
+      --surface:      #09090B;
+      --surface-2:    #121214;
+      --border:       #27272A;
+      --border-hover: #FFFFFF;
+      --primary:      #FFFFFF;
+      --primary-dim:  #18181B;
+      --red:          #EF4444;
+      --text:         #FFFFFF;
+      --text-2:       #A1A1AA;
+      --text-3:       #52525B;
+      --mono:         'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      margin: 0;
+    }
+
+    .container {
+      width: 100%;
+      min-height: 100vh;
+      max-width: 100%;
+      background: #000000;
+      border: none;
+      border-radius: 0;
+      padding: 32px 48px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 24px;
+    }
+
+    @media (max-width: 992px) {
+      .container {
+        padding: 24px;
+        gap: 20px;
+      }
+      .qr-box {
+        padding: 16px !important;
+      }
+      #qrcode {
+        width: 220px !important;
+        height: 220px !important;
+      }
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 16px;
+        gap: 16px;
+      }
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand img {
+      width: 44px;
+      height: 44px;
+      border-radius: 0;
+      border: 1px solid var(--border);
+    }
+
+    .brand-name {
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .brand-sub {
+      font-size: 14px;
+      color: var(--text-3);
+      margin-top: 4px;
+      font-family: var(--mono);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: 0;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-2);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 0;
+      background: var(--text-3);
+      flex-shrink: 0;
+    }
+
+    .status-dot.active {
+      background: #FFFFFF;
+      box-shadow: 0 0 8px #FFFFFF;
+    }
+
+    .btn-disconnect {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: #EF4444;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 8px 16px;
+      text-transform: uppercase;
+    }
+
+    .btn-disconnect:hover {
+      border-color: #EF4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Phase 1: Waiting */
+    #phase-waiting {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      flex: 1;
+    }
+
+    .phase-label {
+      font-family: var(--mono);
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: var(--text-3);
+      text-align: center;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+
+    .qr-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .qr-box {
+      background: #FFFFFF;
+      padding: 24px;
+      border-radius: 0;
+      border: 1px solid var(--border);
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #qrcode {
+      width: 260px;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #qrcode img, #qrcode canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 260px;
+      max-height: 260px;
+    }
+
+    .qr-expired-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      border-radius: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 10;
+      border: 1px solid var(--border);
+    }
+
+    .expired-text {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+
+    .btn-refresh-qr {
+      background: #FFFFFF;
+      color: #000000;
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 0;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding: 0 4px;
+    }
+
+    .step {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .step-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      color: #FFFFFF;
+      flex-shrink: 0;
+      width: 24px;
+    }
+
+    .step-text {
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.4;
+      font-family: var(--mono);
+    }
+
+    .session-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-3);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .mono-accent {
+      font-family: var(--mono);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    .btn-text {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: #FFFFFF;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 0;
+      text-transform: uppercase;
+    }
+
+    .btn-text:hover {
+      border-color: #FFFFFF;
+    }
+
+    /* Phase 2: Paired */
+    #phase-paired {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+
+    #received-files-section {
+      padding: 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 0;
+    }
+
+    .folder-section {
+      padding: 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 0;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-3);
+      margin-bottom: 12px;
+    }
+
+    .breadcrumb-item {
+      color: #FFFFFF;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .breadcrumb-item:hover { text-decoration: underline; }
+
+    .breadcrumb-sep { color: var(--text-3); }
+
+    .folder-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 40px;
+    }
+
+    .folder-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 0;
+      font-size: 12px;
+      font-family: var(--mono);
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .folder-btn:hover {
+      border-color: #FFFFFF;
+      background: var(--surface-2);
+    }
+
+    .dropzone {
+      border: 1px dashed var(--border);
+      border-radius: 0;
+      padding: 44px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      background: var(--surface-2);
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #FFFFFF;
+      background: var(--surface);
+    }
+
+    .dropzone p {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .dropzone span {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--mono);
+    }
+
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dropzone-icon {
+      font-size: 20px;
+      color: var(--text);
+      margin-bottom: 12px;
+      font-family: var(--mono);
+      font-weight: 800;
+    }
+
+    /* Phase 3: Transferring */
+    #phase-transferring {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      padding: 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 0;
+    }
+
+    .transfer-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    #transfer-filename { color: var(--text); }
+    #transfer-size { font-size: 11px; color: var(--text-3); margin-top: 3px; font-family: var(--mono); }
+    #transfer-pct { color: #FFFFFF; font-weight: 800; }
+
+    .progress-track {
+      width: 100%;
+      height: 2px;
+      background: var(--surface);
+      border-radius: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #FFFFFF;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: #EF4444;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 6px 12px;
+      align-self: flex-start;
+      border-radius: 0;
+      text-transform: uppercase;
+    }
+
+    .btn-cancel:hover {
+      border-color: #EF4444;
+    }
+
+    /* Phase 4: Done */
+    #phase-done {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      padding: 24px 0;
+      width: 100%;
+    }
+
+    .done-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 0;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+
+    #done-message {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    #done-subtext {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 4px;
+      font-family: var(--mono);
+    }
+
+    .btn-reset {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      color: #000000;
+      padding: 12px 24px;
+      border-radius: 0;
+      font-size: 12px;
+      font-family: var(--mono);
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .btn-reset:hover {
+      opacity: 0.9;
+    }
+
+    /* Phone mode styles inside index.html */
+    #phone-mode-container.container {
+      max-width: none;
+      border-radius: 0;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: none;
+      padding: 24px;
+    }
+
+    #phone-mode-container input[type="text"] {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #phone-mode-container input[type="text"]:focus { border-color: #FFFFFF; }
+
+    #phone-mode-container button {
+      width: 100%;
+      background: #FFFFFF;
+      color: #000000;
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    #phone-mode-container button:active { opacity: 0.8; }
+    #phone-mode-container button.secondary {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* Chat Modal & Responsive Mobile Optimization */
+    #chat-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .chat-modal-box {
+      background: #000000;
+      width: 100%;
+      max-width: 400px;
+      height: 90vh;
+      max-height: 600px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #2C2C2E;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .chat-modal-header {
+      padding: 16px;
+      border-bottom: 1px solid #2C2C2E;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(18, 18, 18, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      gap: 12px;
+    }
+    .chat-modal-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #000000;
+    }
+    .chat-modal-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #2C2C2E;
+      background: #121212;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 640px) {
+      #chat-modal {
+        padding: 0;
+      }
+      .chat-modal-box {
+        max-width: 100%;
+        height: 100%;
+        max-height: 100dvh;
+        border: none;
+      }
+      .chat-modal-header {
+        padding: 16px;
+        padding-top: max(16px, env(safe-area-inset-top));
+      }
+      .chat-modal-footer {
+        padding: 12px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+      }
+    }
+
+    /* Lightbox Modal */
+    #photo-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.96);
+      z-index: 9999;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .lightbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      width: 100%;
+    }
+
+    .lightbox-img-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+
+    .lightbox-img-wrap img {
+      max-width: 85vw;
+      max-height: 72vh;
+      object-fit: contain;
+      border: 1px solid var(--border);
+    }
+
+    .lightbox-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: #FFFFFF;
+      padding: 8px 16px;
+      border-radius: 0;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+    }
+
+    .lightbox-btn:hover { border-color: #FFFFFF; }
+
+    .lightbox-btn.primary {
+      background: #FFFFFF;
+      color: #000000;
+    }
+
+    .lightbox-nav-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: #FFFFFF;
+      width: 48px;
+      height: 48px;
+      border-radius: 0;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+    }
+
+    .lightbox-nav-btn:hover { border-color: #FFFFFF; }
+    .lightbox-nav-btn.left { left: 16px; }
+    .lightbox-nav-btn.right { right: 16px; }
+
+    .thumb-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+      width: 100%;
+    }
+
+    .thumb-item {
+      width: 56px;
+      height: 56px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .thumb-item.active {
+      border: 2px solid #FFFFFF;
+    }
+
+    footer {
+      margin-top: 28px;
+      text-align: center;
+    }
+
+    .made-by-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: border-color 0.15s;
+    }
+
+    .made-by-badge:hover {
+      border-color: #FFFFFF;
+    }
+  </style>
+</head>
+<body>
+  <!-- PC Mode Container -->
+  <div id="pc-mode-container" class="container">
+    <header>
+      <div class="brand">
+        <img src="logo.png" alt="DocTransit Logo" />
+        <div>
+          <div class="brand-name">DOCTRANSIT TERMINAL</div>
+          <div class="brand-sub">[ E2E ENCRYPTED · ZERO CLOUD ]</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <a href="https://github.com/dev7shah" target="_blank" class="made-by-badge">MADE BY DEV7SHAH</a>
+        <div class="status-pill">
+          <div id="status-dot" class="status-dot"></div>
+          <span id="status-text">DISCONNECTED</span>
+          <button id="btn-disconnect" class="btn-disconnect" style="display:none;" onclick="disconnectSession()">[ DISCONNECT ]</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Phase 1: Waiting -->
+    <div id="phase-waiting" style="width: 100%;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; align-items: stretch; width: 100%;">
+        <!-- Left Column: Specs, Onboarding & Instructions -->
+        <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 24px; background: var(--surface-2); border: 1px solid var(--border); padding: 28px;">
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <span style="font-size: 13px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;">[ WHAT IS DOCTRANSIT? ]</span>
+              <a href="install.html" style="background: #FFFFFF; color: #000000; padding: 6px 14px; font-size: 11px; font-weight: 800; text-decoration: none; text-transform: uppercase;">[ GET MOBILE APP / APK ]</a>
+            </div>
+            <p style="font-size: 14px; color: var(--text-2); line-height: 1.6; font-family: var(--mono);">
+              DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: var(--text-2); font-family: var(--mono); border-top: 1px solid var(--border); padding-top: 16px;">
+              <div>• <strong style="color: #FFFFFF;">ZERO CLOUD STORAGE:</strong> Files stream directly between devices via WebSocket memory relay without server caching.</div>
+              <div>• <strong style="color: #FFFFFF;">E2E ENCRYPTED:</strong> 256-bit AES-GCM encryption derived from the ephemeral session ID ensures zero interception.</div>
+              <div>• <strong style="color: #FFFFFF;">INSTANT PAIRING:</strong> Point your DocTransit app or iPhone camera at the QR code to connect in &lt;1 second.</div>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid var(--border); padding-top: 20px;">
+            <div style="font-size: 11px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px; margin-bottom: 14px;">[ PAIRING PROCEDURE ]</div>
+            <div class="steps" style="margin-bottom: 0; gap: 14px;">
+              <div class="step">
+                <span class="step-num">01</span>
+                <span class="step-text" style="font-size: 14px;">Open DocTransit mobile app or iPhone camera</span>
+              </div>
+              <div class="step">
+                <span class="step-num">02</span>
+                <span class="step-text" style="font-size: 14px;">Scan the QR code displayed on the right</span>
+              </div>
+              <div class="step">
+                <span class="step-num">03</span>
+                <span class="step-text" style="font-size: 14px;">Connected — drop files or browse target directory across full screen</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: QR Code Pairing Terminal -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); padding: 32px; gap: 24px;">
+          <div class="phase-label" style="margin-bottom: 0; font-size: 12px; letter-spacing: 2px;">WAITING FOR DEVICE CONNECTION</div>
+
+          <div class="qr-wrap" style="margin-bottom: 0;">
+            <div class="qr-box" style="padding: 24px;">
+              <div id="qrcode"></div>
+              <div id="qr-expired-overlay" class="qr-expired-overlay">
+                <div class="expired-text">[ QR CODE EXPIRED ]</div>
+                <button onclick="createSession(true)" class="btn-refresh-qr">[ REFRESH QR ]</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="session-meta" style="width: 100%; justify-content: space-around; border-top: 1px solid var(--border); padding-top: 20px; font-size: 12px;">
+            <span>SESSION: <span id="display-session-id" class="mono-accent">---</span></span>
+            <span>EXPIRES: <span id="timer-sec" class="mono-accent">240s</span></span>
+            <button id="btn-refresh-waiting" onclick="createSession(true)" class="btn-text">[ REFRESH SESSION ]</button>
+          </div>
+          <!-- Nearby Devices Discovery -->
+          <div id="nearby-section" style="width: 100%; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 10px; color: var(--text-3); letter-spacing: 1px;">NEARBY DEVICES ON NETWORK</div>
+              <button onclick="fetchNearbyDevices()" style="background: transparent; border: none; color: var(--text-2); font-family: var(--mono); font-size: 10px; cursor: pointer;">[ REFRESH ]</button>
+            </div>
+            <div id="nearby-list" style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="font-size: 11px; color: var(--text-3); text-align: center; padding: 6px;">Searching for devices on same network...</div>
+            </div>
+          </div>
+
+          <div style="width: 100%; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 4px;">
+            <div style="font-size: 10px; color: var(--text-3); letter-spacing: 1px; margin-bottom: 10px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              PC-TO-PC MANUAL JOIN
+              <span title="To connect two PCs together, open DocTransit on your other PC. It will generate its own Session ID at the top. Enter that ID here to connect them." style="cursor: help; color: #FFFFFF; font-weight: bold; background: #27272A; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; line-height: 14px; border: 1px solid #3F3F46; font-size: 10px;">i</span>
+            </div>
+            <div style="display: flex; gap: 8px; width: 100%;">
+              <input id="peer-session-input" type="text" maxlength="12" placeholder="ENTER SESSION ID" spellcheck="false" autocomplete="off" style="flex: 1; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 0; padding: 10px 12px; font-family: var(--mono); font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; outline: none; transition: border-color 0.15s;" onfocus="this.style.borderColor='#FFFFFF'" onblur="this.style.borderColor=''" onkeydown="if(event.key==='Enter')joinPeerSession()" />
+              <button onclick="joinPeerSession()" style="background: #FFFFFF; color: #000000; border: 1px solid var(--border); border-radius: 0; padding: 10px 16px; font-family: var(--mono); font-size: 11px; font-weight: 800; cursor: pointer; letter-spacing: 0.5px; white-space: nowrap;">[ JOIN ]</button>
+            </div>
+            <button id="btn-share-pc-link" onclick="copyPcLink()" style="width: 100%; margin-top: 8px; background: transparent; color: var(--text-3); border: 1px solid var(--border); border-radius: 0; padding: 8px; font-family: var(--mono); font-size: 10px; font-weight: 800; cursor: pointer; letter-spacing: 0.5px; transition: border-color 0.15s, color 0.15s;">[ COPY SHAREABLE LINK ]</button>
+          </div>
+          <div id="rate-limit-error" style="display:none; color: #EF4444; border: 1px solid #EF4444; background: rgba(239, 68, 68, 0.12); padding: 12px 16px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-align: center; margin-top: 14px; width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Paired -->
+    <div id="phase-paired">
+      <div id="received-files-section" style="display:none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div class="section-label" style="margin-bottom:0;">RECEIVED FROM MOBILE DEVICE</div>
+          <button id="btn-preview-all" onclick="openPhotoLightbox(0)" style="width: auto; padding: 6px 14px; font-size: 11px; font-weight: 800; min-height: 32px; display: none;">[ PREVIEW ALL PHOTOS ]</button>
+        </div>
+        <div id="received-files-list"></div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <button id="btn-pc-chat" onclick="openChatModal('pc')" style="width: 100%; background: var(--surface-2); border: 1px solid var(--border); padding: 14px; color: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase;">
+          <span>[ OPEN MESSAGE WINDOW ]</span>
+          <span id="pc-chat-badge" style="display:none; background: #FFFFFF; color: #000000; padding: 2px 8px; font-size: 11px; font-weight: 800;">0 NEW</span>
+        </button>
+      </div>
+
+      <div class="folder-section">
+        <div class="section-label">TARGET DIRECTORY ON DEVICE</div>
+        <div id="breadcrumb" class="breadcrumb">
+          <span class="breadcrumb-item" onclick="navigateRoot()">/ROOT</span>
+        </div>
+        <div id="folder-grid" class="folder-grid"></div>
+      </div>
+
+      <div id="shortcut-mode-hint" style="display:none; padding: 14px; background: var(--surface-2); border: 1px solid var(--border); font-size: 12px; color: #FFFFFF; font-family: var(--mono); font-weight: 700;">
+        [ ! ] iPhone Shortcut mode active — files dropped below are sent via instant polling
+      </div>
+
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="file-input" multiple />
+        <div class="dropzone-icon">[ ↑ ]</div>
+        <p>DROP FILES TO TRANSFER</p>
+        <span id="queue-status">E2E ENCRYPTED · SAVES DIRECTLY TO TARGET DIRECTORY</span>
+      </div>
+
+
+    </div>
+
+    <!-- Phase 3: Transferring -->
+    <div id="phase-transferring">
+      <div class="transfer-info">
+        <span id="transfer-filename">file.pdf</span>
+        <span id="transfer-pct">0%</span>
+      </div>
+      <div id="transfer-size">0 KB</div>
+      <progress id="transfer-progress" value="0" max="100" style="display:none;"></progress>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill-bar"></div>
+      </div>
+      <button class="btn-cancel" onclick="cancelTransfer()">[ CANCEL TRANSFER ]</button>
+    </div>
+
+    <!-- Phase 4: Done -->
+    <div id="phase-done">
+      <div class="done-icon">[ OK ]</div>
+      <div>
+        <p id="done-message">TRANSFER COMPLETED!</p>
+        <p id="done-subtext">Saved to target device</p>
+      </div>
+      <button class="btn-reset" onclick="resetToPaired()">[ SEND ANOTHER FILE ]</button>
+    </div>
+  </div>
+
+  <!-- Phone Mode Container -->
+  <div id="phone-mode-container" class="container" style="display: none;">
+    <header>
+      <div class="brand">
+        <img src="logo.png" alt="DocTransit Logo" />
+        <div>
+          <div class="brand-name">DOCTRANSIT PHONE</div>
+        </div>
+      </div>
+      <div class="status-pill">
+        <div id="phone-status-dot" class="status-dot"></div>
+        <span id="phone-status-text">DISCONNECTED</span>
+      </div>
+    </header>
+
+    <!-- Permanent Android APK Button -->
+    <a id="android-apk-btn" href="doctransit.apk" download="doctransit.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
+      [ DOWNLOAD NATIVE ANDROID APK ]
+    </a>
+
+    <!-- Screen 1: Scanner -->
+    <div id="phone-screen-scanner" style="display: flex; flex-direction: column; gap: 16px;">
+      <p style="font-size: 12px; color: var(--text-2); text-align: center;">Point camera at PC terminal QR code to pair</p>
+      <div style="background: #000; border-radius: 0; overflow: hidden; position: relative; min-height: 260px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);">
+        <video id="phone-video" playsinline autoplay muted style="width: 100%; height: auto; display: block;"></video>
+        <div id="phone-camera-msg" style="position: absolute; color: var(--text-3); font-size: 12px; text-align: center; padding: 20px; font-family: var(--mono);">Requesting camera access...</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+        <input type="text" id="phone-manual-id" placeholder="Or enter 12-char Session ID" maxlength="12" />
+        <button onclick="phoneConnectManual()">[ CONNECT TO SESSION ]</button>
+      </div>
+    </div>
+
+    <!-- Screen 2: Connected -->
+    <div id="phone-screen-connected" style="display: none; flex-direction: column; gap: 16px;">
+      <div class="folder-section">
+        <p style="font-size: 13px; color: var(--text); font-weight: 800; font-family: var(--mono);">CONNECTED TO PC TERMINAL</p>
+        <p id="phone-session-info" style="font-size: 12px; color: #FFFFFF; margin-top: 4px; font-family: var(--mono);">SESSION ID: ---</p>
+      </div>
+
+      <!-- Send Dropzone -->
+      <div id="phone-dropzone" class="dropzone">
+        <input type="file" id="phone-file-input" multiple onchange="phoneHandleFilesSelected(event)" />
+        <div style="font-family: var(--mono); font-size: 18px; color: var(--text); margin-bottom: 8px;">[ + ]</div>
+        <div style="font-family: var(--mono); font-size: 13px; font-weight: 800; color: var(--text);">TAP TO SEND FILES TO PC</div>
+        <div style="font-size: 11px; color: var(--text-2); margin-top: 4px;">PHOTOS · DOCUMENTS · ARCHIVES</div>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button id="btn-phone-chat" onclick="openChatModal('phone')" style="width: 100%; background: var(--surface-2); border: 1px solid var(--border); padding: 14px; color: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase;">
+          <span>[ OPEN MESSAGE WINDOW ]</span>
+          <span id="phone-chat-badge" style="display:none; background: #FFFFFF; color: #000000; padding: 2px 8px; font-size: 11px; font-weight: 800;">0 NEW</span>
+        </button>
+      </div>
+
+      <!-- Active Transfer Progress -->
+      <div id="phone-transfer-area" style="display: none; flex-direction: column; gap: 14px; padding: 18px; background: var(--surface-2); border: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; font-family: var(--mono);">
+          <span id="phone-transfer-title" style="color: #FFF;">TRANSFERRING...</span>
+          <span id="phone-transfer-pct" style="color: #FFFFFF;">0%</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono);" id="phone-transfer-filename">file.pdf</div>
+        <progress id="phone-transfer-progress" value="0" max="100" style="display:none;"></progress>
+        <div class="progress-track">
+          <div class="progress-fill" id="phone-transfer-bar"></div>
+        </div>
+        <button onclick="phoneCancelTransfer()" class="btn-cancel">[ CANCEL TRANSFER ]</button>
+      </div>
+    </div>
+
+    <!-- Screen 3: Done -->
+    <div id="phone-screen-done" style="display: none; flex-direction: column; align-items: center; text-align: center; gap: 16px; padding: 24px 0;">
+      <div class="done-icon">[ OK ]</div>
+      <div>
+        <p id="phone-done-message">TRANSFER COMPLETED!</p>
+        <p id="phone-done-subtext">File.pdf</p>
+      </div>
+      <a id="phone-download-btn" href="#" download style="background: #FFFFFF; color: #000000; border: 1px solid var(--border); text-decoration: none; padding: 12px 24px; border-radius: 0; font-size: 13px; font-weight: 800; font-family: var(--mono); white-space: nowrap; cursor: pointer; display: inline-block;">[ DOWNLOAD FILE ]</a>
+      <button class="btn-reset" onclick="phoneResetToConnected()">[ TRANSFER ANOTHER ]</button>
+    </div>
+  </div>
+
+  <!-- Photo Lightbox Gallery Modal -->
+  <div id="photo-lightbox">
+    <div class="lightbox-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span id="lightbox-counter" style="font-family: var(--mono); font-size: 12px; font-weight: 800; color: #FFFFFF; background: var(--surface-2); padding: 4px 10px; border: 1px solid var(--border);">1 / 1</span>
+        <span id="lightbox-title" style="font-family: var(--mono); font-size: 14px; font-weight: 800; color: #FFF; max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">photo.jpg</span>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <a id="lightbox-download-btn" href="#" download class="lightbox-btn primary">[ DOWNLOAD ]</a>
+        <button onclick="closePhotoLightbox()" class="lightbox-btn">[ CLOSE ]</button>
+      </div>
+    </div>
+
+    <div class="lightbox-img-wrap">
+      <button onclick="changePhotoLightbox(-1)" class="lightbox-nav-btn left">[ < ]</button>
+      <img id="lightbox-image" src="" alt="Preview" />
+      <div id="lightbox-nonimage" style="display: none; background: var(--surface); border: 1px solid var(--border); padding: 40px; text-align: center; max-width: 400px;">
+        <div style="font-size: 32px; margin-bottom: 16px; font-family: var(--mono); font-weight: 800;">[ FILE ]</div>
+        <div id="lightbox-nonimage-name" style="font-family: var(--mono); font-size: 15px; font-weight: 800; color: #FFF; margin-bottom: 8px; word-break: break-all;">file.pdf</div>
+        <div style="font-size: 12px; color: var(--text-2); margin-bottom: 20px;">Document preview not supported in browser</div>
+        <a id="lightbox-nonimage-download" href="#" download class="lightbox-btn primary">[ DOWNLOAD FILE ]</a>
+      </div>
+      <button onclick="changePhotoLightbox(1)" class="lightbox-nav-btn right">[ > ]</button>
+    </div>
+
+    <div id="lightbox-thumb-strip" class="thumb-strip"></div>
+  </div>
+
+  <!-- Pop-Open Messages Modal -->
+  <div id="chat-modal">
+    <div class="chat-modal-box">
+      <div class="chat-modal-header">
+        <div style="font-family: var(--mono); font-size: 13px; font-weight: 800; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1;">[ MESSAGES / CHAT ]</div>
+        <button onclick="closeChatModal()" style="background: transparent; border: 1px solid var(--border); color: var(--text-2); padding: 6px 12px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; white-space: nowrap; flex-shrink: 0;">[ CLOSE ]</button>
+      </div>
+      <div id="chat-modal-messages" class="chat-modal-messages">
+        <div id="chat-empty-state" style="margin: auto; color: var(--text-3); font-family: var(--mono); font-size: 12px; text-align: center;">No messages in this session yet.</div>
+      </div>
+      <div class="chat-modal-footer">
+        <textarea id="chat-modal-input" placeholder="Type a message..." style="flex: 1 1 0%; min-width: 0; width: 0; height: 44px; background: var(--surface); border: 1px solid var(--border); padding: 10px 12px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; resize: none; border-radius: 0; box-sizing: border-box;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendModalChatMessage();}"></textarea>
+        <button onclick="sendModalChatMessage()" style="flex: 0 0 auto; flex-shrink: 0; background: #FFFFFF; color: #000000; border: 1px solid var(--border); font-family: var(--mono); font-size: 12px; font-weight: 800; padding: 0 14px; height: 44px; cursor: pointer; text-transform: uppercase; margin: 0; border-radius: 0;">[ SEND ]</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const isFileOrLocal = window.location.protocol === 'file:' || window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1' || /^192\\.168\\.|^10\\.|^172\\.(1[6-9]|2[0-9]|3[0-1])\\./.test(window.location.hostname);
+    const WORKER_URL = window.DOCTRANSIT_WORKER_URL || (isFileOrLocal ? 'wss://doctransit.in' : \`\${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//\${window.location.host}\`);
+    const HTTP_URL = WORKER_URL.replace('ws://', 'http://').replace('wss://', 'https://');
+
+    const state = {
+      sessionId: null,
+      ws: null,
+      cryptoKey: null,
+      folderTree: [],
+      currentFolderId: null,
+      currentFolderPath: [],
+      phase: 'waiting',
+      timerInterval: null,
+      expirySeconds: 240,
+      connectedDevice: null,
+      currentTransfer: null,
+      sendQueue: [],
+      receivedFiles: [],
+      photoIndices: [],
+      isPeerMode: false,
+      rtcPeerConnection: null,
+      rtcDataChannel: null
+    };
+
+    const PHONE_MODE = new URLSearchParams(window.location.search).get('mode') === 'phone'
+      || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    const PEER_SESSION_ID = new URLSearchParams(window.location.search).get('s');
+
+    if (PHONE_MODE) {
+      document.title = 'DocTransit — Phone';
+      window.addEventListener('DOMContentLoaded', initPhoneMode);
+    } else if (PEER_SESSION_ID && PEER_SESSION_ID.length === 12) {
+      document.title = 'DocTransit — Peer Transfer';
+      window.addEventListener('DOMContentLoaded', () => initPeerMode(PEER_SESSION_ID));
+    } else {
+      window.addEventListener('DOMContentLoaded', initPCMode);
+    }
+
+    function initPCMode() {
+      const pcEl = document.getElementById('pc-mode-container');
+      const phoneEl = document.getElementById('phone-mode-container');
+      if (pcEl) pcEl.style.display = 'flex';
+      if (phoneEl) phoneEl.style.display = 'none';
+      createSession();
+      setupDropzone();
+      fetchNearbyDevices();
+      setInterval(fetchNearbyDevices, 4000);
+    }
+
+    async function initPeerMode(sessionId) {
+      const pcEl = document.getElementById('pc-mode-container');
+      const phoneEl = document.getElementById('phone-mode-container');
+      if (pcEl) pcEl.style.display = 'flex';
+      if (phoneEl) phoneEl.style.display = 'none';
+      state.sessionId = sessionId;
+      state.isPeerMode = true;
+      setStatus(false, 'CONNECTING TO HOST PC...');
+      setPhase('waiting');
+      // Skip createSession — go straight to key derivation and WS connect
+      state.cryptoKey = await deriveAESKey(sessionId);
+      connectAsPeer(sessionId);
+      setupDropzone();
+    }
+
+    function connectAsPeer(sessionId) {
+      if (state.ws) {
+        const old = state.ws;
+        old.onclose = null;
+        try { old.close(); } catch (e) {}
+      }
+      const ws = new WebSocket(\`\${WORKER_URL}/session/\${sessionId}/peer\`);
+      ws.binaryType = 'arraybuffer';
+      state.ws = ws;
+
+      ws.onopen = () => {
+        setStatus(false, 'WAITING FOR HOST PC...');
+      };
+
+      let isProcessingBinary = false;
+      const binaryQueue = [];
+
+      async function processBinaryQueue() {
+        if (isProcessingBinary) return;
+        isProcessingBinary = true;
+        try {
+          while (binaryQueue.length > 0) {
+            let buffer = binaryQueue.shift();
+            if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+            await handleIncomingBinaryChunk(buffer);
+          }
+        } finally {
+          isProcessingBinary = false;
+        }
+      }
+
+      ws.onmessage = (event) => {
+        if (typeof event.data === 'string') {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'transfer_init' && (!msg.total_chunks || msg.total_chunks <= 0)) {
+            console.error('Invalid transfer_init: total_chunks must be > 0');
+            state.ws.send(JSON.stringify({ type: 'error', message: 'Invalid transfer size' }));
+            return;
+          }
+          handleTextMessage(msg);
+        } else {
+          binaryQueue.push(event.data);
+          processBinaryQueue();
+        }
+      };
+
+      ws.onclose = () => {
+        if (state.isPeerMode) {
+          setStatus(false, 'DISCONNECTED FROM HOST');
+          setPhase('waiting');
+        }
+      };
+    }
+
+    function copyPcLink() {
+      if (!state.sessionId) return;
+      const link = \`\${HTTP_URL}/join?s=\${state.sessionId}\`;
+      navigator.clipboard.writeText(link).then(() => {
+        const btn = document.getElementById('btn-share-pc-link');
+        if (btn) {
+          btn.innerText = '[ COPIED! ]';
+          btn.style.borderColor = '#22c55e';
+          btn.style.color = '#22c55e';
+          setTimeout(() => {
+            btn.innerText = '[ SHARE PC LINK ]';
+            btn.style.borderColor = '';
+            btn.style.color = '';
+          }, 2000);
+        }
+      }).catch(() => {
+        prompt('Copy this link:', link);
+      });
+    }
+
+    async function joinPeerSession() {
+      const input = document.getElementById('peer-session-input');
+      const sid = (input ? input.value : '').trim().toLowerCase();
+      if (!sid || sid.length !== 12) {
+        alert('Enter a valid 12-character session ID');
+        return;
+      }
+      // Close current session
+      if (state.ws) {
+        const old = state.ws;
+        state.ws = null;
+        old.onclose = null;
+        try { old.close(); } catch (e) {}
+      }
+      if (state.timerInterval) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+      }
+      // Switch to peer mode
+      state.sessionId = sid;
+      state.isPeerMode = true;
+      state.cryptoKey = await deriveAESKey(sid);
+      connectAsPeer(sid);
+    }
+
+    function recordMySessionHistory(sid) {
+      if (!sid) return;
+      try {
+        const list = JSON.parse(localStorage.getItem('doctransit_my_history') || '[]');
+        if (!list.includes(sid)) {
+          list.push(sid);
+          if (list.length > 20) list.shift();
+          localStorage.setItem('doctransit_my_history', JSON.stringify(list));
+        }
+      } catch (e) {}
+    }
+
+    function isMyHistorySession(sid) {
+      if (!sid) return false;
+      if (sid === state.sessionId) return true;
+      try {
+        const list = JSON.parse(localStorage.getItem('doctransit_my_history') || '[]');
+        return list.includes(sid);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    window.addEventListener('beforeunload', () => {
+      if (state.sessionId) {
+        try { navigator.sendBeacon(\`\${HTTP_URL}/nearby?unregister=\${state.sessionId}\`); } catch(e){}
+      }
+    });
+
+    async function fetchNearbyDevices() {
+      const container = document.getElementById('nearby-list');
+      if (!container || state.phase !== 'waiting' || !state.sessionId) return;
+      try {
+        recordMySessionHistory(state.sessionId);
+        const currentSid = state.sessionId;
+        const history = (JSON.parse(localStorage.getItem('doctransit_my_history') || '[]')).join(',');
+        const res = await fetch(\`\${HTTP_URL}/nearby?current=\${currentSid}&ping=\${currentSid}&excludes=\${history}\`);
+        const data = await res.json();
+        const devices = (data.devices || []).filter(d => !isMyHistorySession(d.session_id));
+        if (devices.length === 0) {
+          container.innerHTML = \`<div style="font-size: 11px; color: var(--text-3); text-align: center; padding: 6px;">No other devices found on this network.</div>\`;
+          return;
+        }
+        container.innerHTML = devices.map(d => \`
+          <button onclick="quickJoinPeer('\${d.session_id}')" style="width: 100%; background: var(--surface); color: #FFFFFF; border: 1px solid var(--border); padding: 8px 12px; font-family: var(--mono); font-size: 11px; font-weight: 800; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-radius: 0; transition: border-color 0.15s;" onmouseover="this.style.borderColor='#FFFFFF'" onmouseout="this.style.borderColor=''">
+            <span>\${d.is_same_ip ? '💻' : '🌐'} SESSION: \${d.session_id} <span style="font-size: 9px; color: \${d.is_same_ip ? '#22c55e' : 'var(--text-3)'};">(\${d.is_same_ip ? 'SAME WI-FI' : 'ONLINE'})</span></span>
+            <span style="color: #22c55e; font-size: 10px;">[ CONNECT ]</span>
+          </button>
+        \`).join('');
+      } catch (err) {
+        console.warn('Error fetching nearby devices:', err);
+      }
+    }
+
+    function quickJoinPeer(sessionId) {
+      const input = document.getElementById('peer-session-input');
+      if (input) input.value = sessionId;
+      joinPeerSession();
+    }
+
+    function flattenTreeList(tree, parentId = null) {
+      let result = [];
+      if (!tree || !Array.isArray(tree)) return result;
+      for (const item of tree) {
+        const flatItem = {
+          id: item.id,
+          name: item.name || 'Folder',
+          parentId: item.parentId || item.parent_id || parentId,
+          color: item.color || '#FFFFFF'
+        };
+        result.push(flatItem);
+        if (item.children && Array.isArray(item.children)) {
+          result = result.concat(flattenTreeList(item.children, item.id));
+        }
+      }
+      return result;
+    }
+
+    const refreshTimestamps = [];
+    let rateLimitCooldownUntil = 0;
+    let rateLimitTimer = null;
+
+    function showRateLimitError(remainingSec) {
+      const errEl = document.getElementById('rate-limit-error');
+      if (errEl) {
+        errEl.style.display = 'block';
+        errEl.innerText = \`[ ERROR: REFRESH RATE LIMIT EXCEEDED (5x IN 10s). PLEASE WAIT \${remainingSec}s TO REFRESH AGAIN ]\`;
+      }
+    }
+
+    function checkRateLimit() {
+      const now = Date.now();
+      if (now < rateLimitCooldownUntil) {
+        const remaining = Math.ceil((rateLimitCooldownUntil - now) / 1000);
+        showRateLimitError(remaining);
+        return false;
+      }
+
+      while (refreshTimestamps.length > 0 && refreshTimestamps[0] <= now - 10000) {
+        refreshTimestamps.shift();
+      }
+
+      refreshTimestamps.push(now);
+
+      if (refreshTimestamps.length >= 5) {
+        rateLimitCooldownUntil = now + 120000;
+        showRateLimitError(120);
+
+        if (rateLimitTimer) clearInterval(rateLimitTimer);
+        rateLimitTimer = setInterval(() => {
+          const current = Date.now();
+          if (current >= rateLimitCooldownUntil) {
+            clearInterval(rateLimitTimer);
+            rateLimitTimer = null;
+            const errEl = document.getElementById('rate-limit-error');
+            if (errEl) errEl.style.display = 'none';
+          } else {
+            const rem = Math.ceil((rateLimitCooldownUntil - current) / 1000);
+            showRateLimitError(rem);
+          }
+        }, 1000);
+
+        return false;
+      }
+
+      const errEl = document.getElementById('rate-limit-error');
+      if (errEl) errEl.style.display = 'none';
+      return true;
+    }
+
+    let isCreatingSession = false;
+    async function createSession(forceNew = false) {
+      const oldSid = state.sessionId || sessionStorage.getItem('doctransit_session_id') || '';
+      if (forceNew) {
+        if (!checkRateLimit()) return;
+        if (oldSid) {
+          try { fetch(\`\${HTTP_URL}/nearby?unregister=\${oldSid}\`); } catch(e){}
+        }
+        sessionStorage.removeItem('doctransit_session_id');
+        sessionStorage.removeItem('doctransit_session_expiry');
+      }
+      if (isCreatingSession) return;
+      isCreatingSession = true;
+
+      try {
+        if (state.timerInterval) {
+          clearInterval(state.timerInterval);
+          state.timerInterval = null;
+        }
+        if (state.transferStallTimer) {
+          clearTimeout(state.transferStallTimer);
+          state.transferStallTimer = null;
+        }
+
+        if (state.ws) {
+          const oldWs = state.ws;
+          state.ws = null;
+          oldWs.onclose = null;
+          if (oldWs.readyState === WebSocket.OPEN && state.phase !== 'waiting') {
+            try { oldWs.send(JSON.stringify({ type: 'cancelled' })); } catch (e) {}
+          }
+          try { oldWs.close(); } catch (e) {}
+        }
+        
+        if (state.receivedFiles) {
+          closePhotoLightbox();
+          state.receivedFiles.forEach(f => f.blobUrl && URL.revokeObjectURL(f.blobUrl));
+        }
+        
+        state.expirySeconds = 240;
+        state.sendQueue = [];
+        state.receivedFiles = [];
+        state.photoIndices = [];
+        state.currentTransfer = null;
+        setPhase('waiting');
+        
+        const overlay = document.getElementById('qr-expired-overlay');
+        if (overlay) overlay.style.display = 'none';
+        const qrcodeEl = document.getElementById('qrcode');
+        if (qrcodeEl) qrcodeEl.style.opacity = '1';
+        
+        updateTimerDisplay();
+
+        const savedId = sessionStorage.getItem('doctransit_session_id');
+        const savedExpiry = parseInt(sessionStorage.getItem('doctransit_session_expiry') || '0', 10);
+        let data = null;
+
+        if (savedId && savedExpiry && savedExpiry > Date.now() + 10000) {
+          data = {
+            session_id: savedId,
+            expires_at: new Date(savedExpiry).toISOString()
+          };
+        } else {
+          const res = await fetch(\`\${HTTP_URL}/session/new?previous=\${oldSid}\`);
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            const errEl = document.getElementById('rate-limit-error');
+            if (errEl) {
+              errEl.innerText = errData.error || 'Server error. Please try again later.';
+              errEl.style.display = 'block';
+            }
+            isCreatingSession = false;
+            return;
+          }
+          data = await res.json();
+          sessionStorage.setItem('doctransit_session_id', data.session_id);
+          sessionStorage.setItem('doctransit_session_expiry', new Date(data.expires_at).getTime().toString());
+        }
+
+        if (!data || !data.session_id) {
+          isCreatingSession = false;
+          return;
+        }
+
+        if (state.sessionId && state.sessionId !== data.session_id) {
+          recordMySessionHistory(state.sessionId);
+        }
+        state.sessionId = data.session_id;
+        recordMySessionHistory(data.session_id);
+        const dispEl = document.getElementById('display-session-id');
+        if (dispEl) dispEl.innerText = data.session_id;
+        fetchNearbyDevices();
+
+        if (data.expires_at) {
+          state.expirySeconds = Math.max(0, Math.floor((new Date(data.expires_at).getTime() - Date.now()) / 1000));
+        } else {
+          state.expirySeconds = 240;
+        }
+        updateTimerDisplay();
+
+        const qrEl = document.getElementById('qrcode');
+        qrEl.innerHTML = '';
+        const expiryMs = data.expires_at ? new Date(data.expires_at).getTime() : Date.now() + 240000;
+        const pwaBase = HTTP_URL.replace('ws://', 'http://').replace('wss://', 'https://');
+        const qrPayload = \`\${pwaBase}/phone.html?s=\${data.session_id}&e=\${expiryMs}\`;
+
+        new QRCode(qrEl, {
+          text: qrPayload,
+          width: 340,
+          height: 340,
+          colorDark: "#000000",
+          colorLight: "#FFFFFF",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+
+        state.timerInterval = setInterval(() => {
+          state.expirySeconds = Math.max(0, state.expirySeconds - 1);
+          updateTimerDisplay();
+          if (state.expirySeconds <= 0) {
+            clearInterval(state.timerInterval);
+            if (state.ws) {
+              const oldWs = state.ws;
+              state.ws = null;
+              oldWs.onclose = null;
+              try { oldWs.close(); } catch (e) {}
+            }
+            if (state.phase === 'waiting') {
+              const overlay = document.getElementById('qr-expired-overlay');
+              if (overlay) overlay.style.display = 'flex';
+              const qEl = document.getElementById('qrcode');
+              if (qEl) qEl.style.opacity = '0.25';
+              const secEl = document.getElementById('timer-sec');
+              if (secEl) secEl.innerText = '0s';
+              setStatus(false, 'QR CODE EXPIRED');
+            } else {
+              console.warn('Session expired.');
+            }
+          }
+        }, 1000);
+
+        connectWebSocket();
+      } catch (err) {
+        setStatus(false, 'ERROR CREATING SESSION');
+        console.error(err);
+      } finally {
+        isCreatingSession = false;
+      }
+    }
+
+    let reconnectAttempts = 0;
+
+    function handlePeerDisconnected(event) {
+      if (state.phase === 'transferring') {
+        alert('Peer disconnected during transfer.');
+      }
+      if (state.isPeerMode) {
+        // Peer mode: try to reconnect to the host
+        setStatus(false, 'DISCONNECTED FROM HOST');
+        document.getElementById('btn-disconnect').style.display = 'none';
+        const oldWs = state.ws;
+        state.ws = null;
+        if (oldWs) {
+          oldWs.onclose = null;
+          try { oldWs.close(); } catch (e) {}
+        }
+        setPhase('waiting');
+        // Try to reconnect after 2 seconds
+        setTimeout(() => connectAsPeer(state.sessionId), 2000);
+      } else if (state.phase === 'waiting') {
+        // Reconnect silently if dropped while waiting (e.g. idle timeout)
+        reconnectAttempts++;
+        if (reconnectAttempts > 3 || (event && event.code === 1008)) {
+          reconnectAttempts = 0;
+          createSession(true); // Force new session if server consistently rejects or limits
+        } else {
+          setTimeout(connectWebSocket, 1000);
+        }
+      } else {
+        // We are paired (host mode).
+        if (event) {
+          // OUR websocket dropped due to network blip. Try to reconnect to the same session!
+          reconnectAttempts++;
+          setStatus(false, 'RECONNECTING...');
+          setTimeout(connectWebSocket, 1500);
+        } else {
+          // Peer explicitly sent { type: 'disconnected' }
+          setStatus(false, 'DISCONNECTED BY PEER');
+          document.getElementById('btn-disconnect').style.display = 'none';
+          clearInterval(state.timerInterval);
+          const oldWs = state.ws;
+          state.ws = null;
+          if (oldWs) {
+            oldWs.onclose = null;
+            try { oldWs.close(); } catch (e) {}
+          }
+          setPhase('waiting');
+          createSession();
+        }
+      }
+    }
+
+    function updateTimerDisplay() {
+      const el = document.getElementById('timer-sec');
+      if (el) el.innerText = \`\${state.expirySeconds}s\`;
+      if (state.phase !== 'waiting' && state.connectedDevice) {
+        setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (\${state.expirySeconds}s LEFT)\`);
+      }
+    }
+
+    let isProcessingBinary = false;
+    const binaryQueue = [];
+    
+    async function processBinaryQueue() {
+      if (isProcessingBinary) return;
+      isProcessingBinary = true;
+      try {
+        while (binaryQueue.length > 0) {
+          let buffer = binaryQueue.shift();
+          if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+          await handleIncomingBinaryChunk(buffer);
+        }
+      } finally {
+        isProcessingBinary = false;
+      }
+    }
+
+    function connectWebSocket() {
+      if (state.ws) {
+        const old = state.ws;
+        old.onclose = null;
+        try { old.close(); } catch (e) {}
+      }
+      const ws = new WebSocket(\`\${WORKER_URL}/session/\${state.sessionId}/pc\`);
+      ws.binaryType = 'arraybuffer';
+      state.ws = ws;
+
+      ws.onopen = () => {
+        reconnectAttempts = 0;
+        setStatus(false, 'WAITING FOR PHONE...');
+      };
+
+      ws.onmessage = (event) => {
+        if (typeof event.data === 'string') {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'transfer_init' && (!msg.total_chunks || msg.total_chunks <= 0)) {
+            console.error('Invalid transfer_init: total_chunks must be > 0');
+            state.ws.send(JSON.stringify({ type: 'error', message: 'Invalid transfer size' }));
+            return;
+          }
+          handleTextMessage(msg);
+        } else {
+          binaryQueue.push(event.data);
+          processBinaryQueue();
+        }
+      };
+
+      ws.onclose = (event) => {
+        handlePeerDisconnected(event);
+      };
+    }
+
+    async function initWebRTC(isCaller) {
+      if (state.rtcPeerConnection) {
+        state.rtcPeerConnection.close();
+      }
+      
+      const config = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      };
+      
+      const pc = new RTCPeerConnection(config);
+      state.rtcPeerConnection = pc;
+      
+      pc.onicecandidate = (event) => {
+        if (event.candidate && state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'webrtc_ice', candidate: event.candidate }));
+        }
+      };
+      
+      pc.onconnectionstatechange = () => {
+        console.log('WebRTC state:', pc.connectionState);
+      };
+
+      if (isCaller) {
+        const dc = pc.createDataChannel('fileTransfer', { negotiated: true, id: 0 });
+        setupDataChannel(dc);
+        
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'webrtc_offer', sdp: pc.localDescription }));
+        }
+      } else {
+        const dc = pc.createDataChannel('fileTransfer', { negotiated: true, id: 0 });
+        setupDataChannel(dc);
+      }
+    }
+
+    function setupDataChannel(dc) {
+      dc.binaryType = 'arraybuffer';
+      dc.onopen = () => {
+        console.log('WebRTC DataChannel OPEN');
+        state.rtcDataChannel = dc;
+      };
+      dc.onclose = () => {
+        console.log('WebRTC DataChannel CLOSED');
+        state.rtcDataChannel = null;
+      };
+      dc.onmessage = (event) => {
+        if (typeof event.data !== 'string') {
+          binaryQueue.push(event.data);
+          processBinaryQueue();
+        }
+      };
+    }
+
+    async function handleTextMessage(msg) {
+      if (msg.type === 'waiting') {
+        setStatus(false, 'WAITING FOR PHONE...');
+      } else if (msg.type === 'paired') {
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.expirySeconds = 240;
+        updateTimerDisplay();
+        state.connectedDevice = msg.device || 'Phone App';
+        setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (\${state.expirySeconds}s LEFT)\`);
+        document.getElementById('btn-disconnect').style.display = 'block';
+        if (!state.cryptoKey) {
+          state.cryptoKey = await deriveAESKey(state.sessionId);
+        }
+        if (state.phase !== 'paired' && state.phase !== 'transferring') {
+          setPhase('paired');
+        }
+        if (msg.shortcut_mode) {
+          document.getElementById('shortcut-mode-hint').style.display = 'block';
+        }
+        initWebRTC(true);
+      } else if (msg.type === 'folders') {
+        const list = msg.folders || flattenTreeList(msg.tree || []);
+        state.folderTree = list;
+        renderFolders();
+      } else if (msg.type === 'ready') {
+        if (state.currentTransfer && state.currentTransfer.direction === 'sending') {
+          startSendingChunks();
+        }
+      } else if (msg.type === 'ack') {
+        if (state.currentTransfer && state.currentTransfer.direction === 'sending') {
+          handleAck(msg.chunk_index);
+        }
+      } else if (msg.type === 'shortcut_ack') {
+        setPhase('done');
+        document.getElementById('done-message').innerText = 'RECEIVED ON IPHONE!';
+        document.getElementById('done-subtext').innerText = 'Saved to iPhone Files app';
+      } else if (msg.type === 'text_message') {
+        appendChatMessage('PEER', msg.text);
+      } else if (msg.type === 'webrtc_offer') {
+        initWebRTC(false);
+        await state.rtcPeerConnection.setRemoteDescription(msg.sdp);
+        const answer = await state.rtcPeerConnection.createAnswer();
+        await state.rtcPeerConnection.setLocalDescription(answer);
+        if (state.ws) state.ws.send(JSON.stringify({ type: 'webrtc_answer', sdp: state.rtcPeerConnection.localDescription }));
+      } else if (msg.type === 'webrtc_answer') {
+        if (state.rtcPeerConnection) await state.rtcPeerConnection.setRemoteDescription(msg.sdp);
+      } else if (msg.type === 'webrtc_ice') {
+        if (state.rtcPeerConnection && msg.candidate) {
+          try { await state.rtcPeerConnection.addIceCandidate(msg.candidate); } catch(e) {}
+        }
+      } else if (msg.type === 'transfer_init') {
+        if (state.currentTransfer) {
+          state.incomingTransferQueue = state.incomingTransferQueue || [];
+          state.incomingTransferQueue.push(msg);
+          return;
+        }
+        state.currentTransfer = {
+          direction: 'receiving',
+          filename: msg.filename || 'received_file',
+          size: typeof msg.size === 'number' ? msg.size : 0,
+          total_chunks: typeof msg.total_chunks === 'number' ? msg.total_chunks : 0,
+          mime_type: msg.mime_type || 'application/octet-stream',
+          receivedChunks: 0,
+          chunksData: new Array(typeof msg.total_chunks === 'number' ? msg.total_chunks : 0)
+        };
+        setPhase('transferring');
+        updateProgressDisplay(state.currentTransfer.filename, state.currentTransfer.size, 0);
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'ready' }));
+        }
+
+      } else if (msg.type === 'cancelled') {
+        alert('Transfer cancelled by phone');
+        setPhase('paired');
+      } else if (msg.type === 'disconnected') {
+        handlePeerDisconnected();
+      } else if (msg.type === 'peer_disconnected') {
+        setStatus(false, 'PHONE DROPPED (WAITING FOR RECONNECT...)');
+      }
+    }
+
+
+    function setStatus(active, text) {
+      const dot = document.getElementById('status-dot');
+      const txt = document.getElementById('status-text');
+      if (dot) {
+        if (active) dot.classList.add('active');
+        else dot.classList.remove('active');
+      }
+      if (txt) txt.innerText = text;
+    }
+
+    function setPhase(phase) {
+      state.phase = phase;
+      document.getElementById('phase-waiting').style.display = (phase === 'waiting') ? 'flex' : 'none';
+      document.getElementById('phase-paired').style.display = (phase === 'paired') ? 'flex' : 'none';
+      document.getElementById('phase-transferring').style.display = (phase === 'transferring') ? 'flex' : 'none';
+      document.getElementById('phase-done').style.display = (phase === 'done') ? 'flex' : 'none';
+      if (phase === 'waiting') {
+        clearChatMessages();
+        const hint = document.getElementById('shortcut-mode-hint');
+        if (hint) hint.style.display = 'none';
+      }
+      if (phase === 'paired') {
+        renderFolders();
+        renderReceivedFiles();
+      }
+    }
+
+    function disconnectSession() {
+      clearChatMessages();
+      sessionStorage.removeItem('doctransit_session_id');
+      sessionStorage.removeItem('doctransit_session_expiry');
+      if (state.ws) {
+        const oldWs = state.ws;
+        state.ws = null;
+        oldWs.onclose = null;
+        if (oldWs.readyState === 1) { // WebSocket.OPEN
+          try { oldWs.send(JSON.stringify({ type: 'disconnected' })); } catch (e) {}
+          setTimeout(() => { try { oldWs.close(); } catch(e) {} }, 100);
+        } else {
+          try { oldWs.close(); } catch (e) {}
+        }
+      }
+      clearInterval(state.timerInterval);
+      setPhase('waiting');
+      document.getElementById('btn-disconnect').style.display = 'none';
+      createSession();
+    }
+
+    function navigateRoot() {
+      state.currentFolderId = null;
+      state.currentFolderPath = [];
+      renderFolders();
+    }
+
+    function navigateIntoFolder(id, name) {
+      state.currentFolderId = id;
+      state.currentFolderPath.push({ id, name });
+      renderFolders();
+    }
+
+    function renderFolders() {
+      const bcEl = document.getElementById('breadcrumb');
+      if (!bcEl) return;
+      bcEl.innerHTML = '';
+      
+      const rootSpan = document.createElement('span');
+      rootSpan.className = 'breadcrumb-item';
+      rootSpan.textContent = '/ROOT';
+      rootSpan.addEventListener('click', () => navigateRoot());
+      bcEl.appendChild(rootSpan);
+
+      for (let i = 0; i < state.currentFolderPath.length; i++) {
+        const item = state.currentFolderPath[i];
+        const sepSpan = document.createElement('span');
+        sepSpan.className = 'breadcrumb-sep';
+        sepSpan.textContent = ' > ';
+        bcEl.appendChild(sepSpan);
+
+        const itemSpan = document.createElement('span');
+        itemSpan.className = 'breadcrumb-item';
+        itemSpan.textContent = item.name.toUpperCase();
+        itemSpan.addEventListener('click', () => navigateUpTo(i));
+        bcEl.appendChild(itemSpan);
+      }
+
+      const children = (state.folderTree || []).filter(f => {
+        const pid = f.parentId !== undefined ? f.parentId : f.parent_id;
+        return pid === state.currentFolderId || (state.currentFolderId === null && !pid);
+      });
+      const gridEl = document.getElementById('folder-grid');
+      if (!gridEl) return;
+
+      if (children.length === 0) {
+        gridEl.innerHTML = \`<p style="color: var(--text-3); font-size: 11px; align-self: center; font-family: var(--mono);">NO SUBDIRECTORIES INSIDE THIS DIRECTORY</p>\`;
+        return;
+      }
+
+      gridEl.innerHTML = '';
+      children.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = 'folder-btn';
+        btn.textContent = \`/\${(f.name || 'Folder').toUpperCase()}\`;
+        btn.addEventListener('click', () => navigateIntoFolder(f.id, f.name || 'Folder'));
+        gridEl.appendChild(btn);
+      });
+    }
+
+    function navigateUpTo(index) {
+      if (index < 0) {
+        navigateRoot();
+        return;
+      }
+      state.currentFolderPath = state.currentFolderPath.slice(0, index + 1);
+      state.currentFolderId = state.currentFolderPath[state.currentFolderPath.length - 1].id;
+      renderFolders();
+    }
+
+    async function deriveAESKey(sessionId) {
+      const enc = new TextEncoder();
+      const baseKey = await crypto.subtle.importKey(
+        'raw', enc.encode(sessionId), { name: 'HKDF' }, false, ['deriveKey']
+      );
+      return await crypto.subtle.deriveKey(
+        {
+          name: 'HKDF',
+          hash: 'SHA-256',
+          salt: enc.encode('doctransit-v2'),
+          info: enc.encode('file-transfer')
+        },
+        baseKey,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function encryptChunk(plaintextBuffer, key, chunkIndex) {
+      const iv = new Uint8Array(12);
+      crypto.getRandomValues(iv);
+      const view = new DataView(iv.buffer);
+      view.setUint32(8, chunkIndex, false);
+
+      const ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        plaintextBuffer
+      );
+
+      const combined = new Uint8Array(12 + ciphertext.byteLength);
+      combined.set(iv, 0);
+      combined.set(new Uint8Array(ciphertext), 12);
+      return combined.buffer;
+    }
+
+    async function decryptChunk(combinedBuffer, key, chunkIndex) {
+      const combined = new Uint8Array(combinedBuffer);
+      const iv = combined.slice(0, 12);
+      const view = new DataView(iv.buffer, iv.byteOffset, iv.byteLength);
+      const extractedIndex = view.getUint32(8, false);
+      const ciphertext = combined.slice(12);
+      const plaintext = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        ciphertext
+      );
+      return { chunkIndex: extractedIndex, plaintext };
+    }
+
+    function setupDropzone() {
+      const dz = document.getElementById('dropzone');
+      const fileInput = document.getElementById('file-input');
+
+      dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+      dz.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dz.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          queueFiles(Array.from(e.dataTransfer.files));
+        }
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (fileInput.files && fileInput.files.length > 0) {
+          queueFiles(Array.from(fileInput.files));
+          fileInput.value = '';
+        }
+      });
+    }
+
+    function queueFiles(files) {
+      if (state.phase !== 'paired' && state.phase !== 'transferring') return;
+      const validFiles = files.filter(f => {
+        if (!f.type && f.size === 0) {
+          alert(\`Folders are not supported directly. Please drop individual files or zip the folder.\`);
+          return false;
+        }
+        if (f.size > 500 * 1024 * 1024) {
+          console.warn(\`File \${f.name} is too large. Maximum size is 500MB.\`);
+          alert(\`File \${f.name} is too large. Maximum size is 500MB.\`);
+          return false;
+        }
+        return true;
+      });
+      if (validFiles.length === 0) return;
+      
+      state.sendQueue.push(...validFiles);
+      if (state.phase === 'paired' && !state.currentTransfer) {
+        processNextInQueue();
+      } else {
+        updateQueueDisplay();
+      }
+    }
+
+    function updateQueueDisplay() {
+      const qs = document.getElementById('queue-status');
+      if (qs && state.sendQueue.length > 0) {
+        qs.innerText = \`\${state.sendQueue.length} MORE FILE(S) WAITING IN QUEUE...\`;
+      } else if (qs) {
+        qs.innerText = 'E2E ENCRYPTED · SAVES DIRECTLY TO TARGET DIRECTORY';
+      }
+    }
+
+    function processNextInQueue() {
+      if (state.sendQueue.length === 0) {
+        setPhase('paired');
+        updateQueueDisplay();
+        return;
+      }
+      const file = state.sendQueue.shift();
+      updateQueueDisplay();
+      initiateSendFile(file);
+    }
+
+    function initiateSendFile(file) {
+      if (state.phase !== 'paired' && state.phase !== 'transferring') return;
+      const totalChunks = Math.max(1, Math.ceil(file.size / (32 * 1024)));
+      
+      state.currentTransfer = {
+        direction: 'sending',
+        file: file,
+        filename: file.name,
+        size: file.size,
+        total_chunks: totalChunks,
+        sentChunks: 0,
+        pendingAck: null
+      };
+
+      setPhase('transferring');
+      updateProgressDisplay(file.name, file.size, 0);
+
+      state.ws.send(JSON.stringify({
+        type: 'transfer_init',
+        filename: file.name,
+        size: file.size,
+        total_chunks: totalChunks,
+        folder_id: state.currentFolderId,
+        mime_type: file.type || 'application/octet-stream'
+      }));
+    }
+
+    async function startSendingChunks() {
+      if (!state.currentTransfer || state.currentTransfer.direction !== 'sending') return;
+      state.currentTransfer.nextIndex = 0;
+      state.currentTransfer.sentChunks = 0; // Tracks ACKs received
+      state.currentTransfer.isProcessing = false;
+      streamNextSendingChunk();
+    }
+
+    async function streamNextSendingChunk() {
+      const transfer = state.currentTransfer;
+      if (!transfer || transfer.direction !== 'sending' || transfer.isProcessing) return;
+      transfer.isProcessing = true;
+
+      try {
+        // Adaptive send-ahead window: WebRTC is direct so use large window,
+        // relay mode scales down based on file size to prevent buffer overflow
+        const usingWebRTC = state.rtcDataChannel && state.rtcDataChannel.readyState === 'open';
+        let maxWindow;
+        if (usingWebRTC) {
+          maxWindow = 256;
+        } else {
+          const sizeMB = transfer.size / (1024 * 1024);
+          if (sizeMB < 10) maxWindow = 64;
+          else if (sizeMB < 50) maxWindow = 32;
+          else maxWindow = 16;
+        }
+        while (state.currentTransfer === transfer && 
+               transfer.nextIndex < transfer.total_chunks && 
+               (transfer.nextIndex - transfer.sentChunks) < maxWindow) {
+          
+          const chunkIndex = transfer.nextIndex;
+          transfer.nextIndex++;
+          
+          let arrayBuffer, encrypted;
+          try {
+            const offset = chunkIndex * 32 * 1024;
+            const slice = transfer.file.slice(offset, offset + 32 * 1024);
+            arrayBuffer = await slice.arrayBuffer();
+            encrypted = await encryptChunk(arrayBuffer, state.cryptoKey, chunkIndex);
+          } catch (err) {
+            console.error("Failed to read or encrypt chunk:", err);
+            state.currentTransfer = null;
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+              state.ws.send(JSON.stringify({ type: 'cancelled' }));
+            }
+            if (state.sendQueue.length > 0) {
+              processNextInQueue();
+            } else {
+              setPhase('paired');
+              updateQueueDisplay();
+              setStatus(true, \`CONNECTED: \${state.connectedDevice ? state.connectedDevice.toUpperCase() : ''} (ERROR READING FILE)\`);
+            }
+            return;
+          }
+
+          if (state.rtcDataChannel && state.rtcDataChannel.readyState === 'open') {
+            state.rtcDataChannel.send(encrypted);
+          } else if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+            state.ws.send(encrypted);
+          }
+          
+          if (state.senderStallTimer) clearTimeout(state.senderStallTimer);
+          state.senderStallTimer = setTimeout(() => {
+            if (state.currentTransfer && state.currentTransfer.direction === 'sending') {
+              console.warn(\`Sender stalled waiting for ACK\`);
+              state.currentTransfer = null;
+              if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({ type: 'cancelled' }));
+              }
+              if (state.sendQueue.length > 0) {
+                processNextInQueue();
+              } else {
+                setPhase('paired');
+                updateQueueDisplay();
+                setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (STALLED — RETRY)\`);
+              }
+            }
+          }, 15000);
+        }
+      } finally {
+        if (state.currentTransfer === transfer) {
+          transfer.isProcessing = false;
+          // If window opened up while processing, continue
+          if ((transfer.nextIndex - transfer.sentChunks) < 256 && transfer.nextIndex < transfer.total_chunks) {
+            streamNextSendingChunk();
+          }
+        }
+      }
+    }
+
+    function handleAck(chunkIndex) {
+      if (state.senderStallTimer) {
+        clearTimeout(state.senderStallTimer);
+        state.senderStallTimer = null;
+      }
+      const transfer = state.currentTransfer;
+      if (!transfer || transfer.direction !== 'sending') return;
+
+      state.expirySeconds = 240;
+      updateTimerDisplay();
+
+      transfer.sentChunks++; // Tracks ACKs received
+      const pct = Math.min(100, Math.round((transfer.sentChunks / transfer.total_chunks) * 100));
+      updateProgressDisplay(transfer.filename, transfer.size, pct);
+
+      if (transfer.sentChunks >= transfer.total_chunks) {
+        state.currentTransfer = null;
+        if (state.sendQueue.length > 0) {
+          processNextInQueue();
+        } else {
+          setPhase('paired');
+          updateQueueDisplay();
+          setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (LAST SENT: \${transfer.filename})\`);
+        }
+      } else {
+        streamNextSendingChunk();
+      }
+    }
+
+    async function handleIncomingBinaryChunk(buffer) {
+      const transfer = state.currentTransfer;
+      if (!transfer || transfer.direction !== 'receiving') return;
+
+      state.expirySeconds = 240;
+      updateTimerDisplay();
+
+      let idx = 0;
+      try {
+        const result = await decryptChunk(buffer, state.cryptoKey, transfer.receivedChunks);
+        // After await, re-check transfer is still valid (could have been cancelled during decrypt)
+        if (state.currentTransfer !== transfer) return;
+        idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : 0;
+        transfer.chunksData[idx] = new Blob([result.plaintext]);
+        transfer.receivedChunks++;
+
+        const pct = Math.min(100, Math.round((transfer.receivedChunks / transfer.total_chunks) * 100));
+        updateProgressDisplay(transfer.filename, transfer.size, pct);
+
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
+        }
+      } catch (err) {
+        // After await, check if transfer was already cancelled/replaced
+        if (state.currentTransfer !== transfer) return;
+        console.error('Failed to decrypt incoming chunk:', err);
+        state.currentTransfer = null;
+        if (state.transferStallTimer) {
+          clearTimeout(state.transferStallTimer);
+          state.transferStallTimer = null;
+        }
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'cancelled' }));
+        }
+        if (state.incomingTransferQueue && state.incomingTransferQueue.length > 0) {
+          const nextMsg = state.incomingTransferQueue.shift();
+          handleTextMessage(nextMsg);
+        } else if (state.sendQueue.length > 0) {
+          processNextInQueue();
+        } else {
+          setPhase('paired');
+          updateQueueDisplay();
+          setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (ERROR)\`);
+        }
+        return;
+      }
+
+      // Fix 4: Transfer stall timer watchdog
+      if (state.transferStallTimer) clearTimeout(state.transferStallTimer);
+      state.transferStallTimer = setTimeout(() => {
+        if (state.currentTransfer && state.currentTransfer.direction === 'receiving') {
+          const received = state.currentTransfer.receivedChunks;
+          const total = state.currentTransfer.total_chunks;
+          console.warn(\`Transfer stalled at \${received}/\${total} chunks\`);
+          state.currentTransfer = null;
+          if (state.transferStallTimer) {
+            clearTimeout(state.transferStallTimer);
+            state.transferStallTimer = null;
+          }
+          if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+            state.ws.send(JSON.stringify({ type: 'cancelled' }));
+          }
+          if (state.sendQueue.length > 0) {
+            processNextInQueue();
+          } else {
+            setPhase('paired');
+            updateQueueDisplay();
+            setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (STALLED — RETRY)\`);
+          }
+        }
+      }, 15000);
+
+      // Guard: only the handler that sees the exact completion count finalizes
+      if (transfer.receivedChunks === transfer.total_chunks && state.currentTransfer === transfer) {
+        const t = transfer;
+
+        const validChunks = t.chunksData.filter(Boolean);
+
+        if (validChunks.length !== t.total_chunks) {
+          // Still missing chunks — show error and reset
+          console.error(\`Missing chunks: got \${validChunks.length}/\${t.total_chunks}\`);
+          state.currentTransfer = null;
+          if (state.sendQueue.length > 0) {
+            processNextInQueue();
+          } else {
+            setPhase('paired');
+            updateQueueDisplay();
+          }
+          setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (TRANSFER INCOMPLETE — RETRY)\`);
+          return;
+        }
+
+        // Clear stall timer on successful completion
+        if (state.transferStallTimer) {
+          clearTimeout(state.transferStallTimer);
+          state.transferStallTimer = null;
+        }
+
+        const finalBlob = new Blob(validChunks, { type: t.mime_type });
+        t.chunksData = null;
+
+        if (t.filename === 'message.txt' && t.size < 50 * 1024) {
+          finalBlob.text().then(text => {
+            appendChatMessage('PEER', text);
+            state.currentTransfer = null;
+            if (state.sendQueue.length > 0) {
+              processNextInQueue();
+            } else {
+              setPhase('paired');
+              updateQueueDisplay();
+              setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (LAST RECEIVED: \${t.filename})\`);
+            }
+          });
+          return;
+        }
+
+        const blobUrl = URL.createObjectURL(finalBlob);
+        state.receivedFiles = state.receivedFiles || [];
+        state.receivedFiles.push({
+          filename: t.filename,
+          size: t.size,
+          mimeType: t.mime_type,
+          blobUrl: blobUrl
+        });
+        currentReceivedViewIndex = state.receivedFiles.length - 1; // Auto-show the newest file
+        renderReceivedFiles();
+        
+        // Debug alert to confirm PC received it
+
+
+        state.currentTransfer = null;
+        if (state.incomingTransferQueue && state.incomingTransferQueue.length > 0) {
+          const nextMsg = state.incomingTransferQueue.shift();
+          handleTextMessage(nextMsg);
+        } else if (state.sendQueue.length > 0) {
+          processNextInQueue();
+        } else {
+          setPhase('paired');
+          updateQueueDisplay();
+          setStatus(true, \`CONNECTED: \${state.connectedDevice.toUpperCase()} (RECEIVED: \${t.filename})\`);
+          const sec = document.getElementById('received-files-section');
+          if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return;
+      }
+    }
+
+    let currentReceivedViewIndex = 0;
+
+    function navReceivedFiles(dir) {
+      currentReceivedViewIndex += dir;
+      renderReceivedFiles();
+    }
+
+    async function downloadAllReceived() {
+      if (!state.receivedFiles || state.receivedFiles.length === 0) return;
+      
+      const buttons = document.querySelectorAll('button[onclick="downloadAllReceived()"]');
+      buttons.forEach(btn => {
+        btn.innerText = '[ ZIPPING... ]';
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+      });
+
+      try {
+        const zipData = {};
+        for (let i = 0; i < state.receivedFiles.length; i++) {
+          const f = state.receivedFiles[i];
+          let filename = f.filename;
+          
+          // Ensure unique filenames in the ZIP
+          while (zipData[filename]) {
+            const parts = filename.split('.');
+            if (parts.length > 1) {
+              const ext = parts.pop();
+              filename = parts.join('.') + \`_\${i}.\` + ext;
+            } else {
+              filename = filename + \`_\${i}\`;
+            }
+          }
+          
+          const res = await fetch(f.blobUrl);
+          const buf = await res.arrayBuffer();
+          zipData[filename] = new Uint8Array(buf);
+        }
+
+        const zipped = window.fflate.zipSync(zipData);
+        const blob = new Blob([zipped], { type: 'application/zip' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        const timestamp = new Date().getTime();
+        a.download = \`LabBridge_Transfer_\${timestamp}.zip\`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      } catch (err) {
+        console.error("Zip failed:", err);
+        alert("Failed to zip files. Please download them individually.");
+      } finally {
+        buttons.forEach(btn => {
+          btn.innerText = '[ DOWNLOAD ALL ]';
+          btn.style.opacity = '1';
+          btn.style.pointerEvents = 'auto';
+        });
+      }
+    }
+
+    function deleteReceivedFile(index) {
+      if (!state.receivedFiles || index < 0 || index >= state.receivedFiles.length) return;
+      const file = state.receivedFiles[index];
+      if (file && file.blobUrl) {
+        try { URL.revokeObjectURL(file.blobUrl); } catch (e) {}
+      }
+      state.receivedFiles.splice(index, 1);
+      if (currentReceivedViewIndex >= state.receivedFiles.length) {
+        currentReceivedViewIndex = Math.max(0, state.receivedFiles.length - 1);
+      }
+      renderReceivedFiles();
+    }
+
+    function renderReceivedFiles() {
+      const section = document.getElementById('received-files-section');
+      const list = document.getElementById('received-files-list');
+      if (!section || !list) return;
+      if (!state.receivedFiles || state.receivedFiles.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      list.innerHTML = '';
+
+      if (currentReceivedViewIndex >= state.receivedFiles.length) {
+        currentReceivedViewIndex = state.receivedFiles.length - 1;
+      }
+      if (currentReceivedViewIndex < 0) currentReceivedViewIndex = 0;
+
+      const f = state.receivedFiles[currentReceivedViewIndex];
+      const isImage = (f.mimeType && f.mimeType.startsWith('image/')) || f.filename.match(/\\\\.(jpg|jpeg|png|gif|webp|heic|bmp)\$/i);
+      
+      let imgHtml = '';
+      if (isImage) {
+        imgHtml = \`<div style="margin-bottom: 12px; text-align: center; background: var(--surface-2); padding: 8px; border: 1px solid var(--border);">
+          <img src="\${f.blobUrl}" alt="\${f.filename}" onclick="openPhotoLightbox(\${currentReceivedViewIndex})" style="max-height: 240px; max-width: 100%; border: 1px solid var(--border); object-fit: contain; cursor: pointer; transition: transform 0.15s;" />
+        </div>\`;
+      } else {
+        imgHtml = \`<div style="margin-bottom: 12px; height: 120px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); font-family: var(--mono); font-size: 12px;">
+          [ NO PREVIEW AVAILABLE ]
+        </div>\`;
+      }
+
+      const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      };
+      const safeFilename = escapeHtml(f.filename);
+      const hasMultiple = state.receivedFiles.length > 1;
+
+      list.innerHTML = \`
+        <div class="received-item" style="padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 0; margin-top: 10px; font-family: var(--mono);">
+          \${hasMultiple ? \`
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <button onclick="navReceivedFiles(-1)" style="background: transparent; border: 1px solid var(--border); color: white; padding: 6px 12px; cursor: pointer; font-family: var(--mono); font-weight: bold; font-size: 11px;" \${currentReceivedViewIndex === 0 ? 'opacity:0.5; pointer-events:none;' : ''}>&lt; PREV</button>
+              <span style="font-size: 11px; color: var(--text-2);">FILE \${currentReceivedViewIndex + 1} OF \${state.receivedFiles.length}</span>
+              <button onclick="navReceivedFiles(1)" style="background: transparent; border: 1px solid var(--border); color: white; padding: 6px 12px; cursor: pointer; font-family: var(--mono); font-weight: bold; font-size: 11px;" \${currentReceivedViewIndex === state.receivedFiles.length - 1 ? 'opacity:0.5; pointer-events:none;' : ''}>NEXT &gt;</button>
+            </div>
+          \` : ''}
+          \${imgHtml}
+          <div style="text-align: center; margin-bottom: 16px;">
+            <strong style="font-size: 13px; color: #fff; word-break: break-all;">\${safeFilename}</strong><br />
+            <span style="font-size: 11px; color: var(--text-2);">\${formatSize(f.size)}</span>
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+            <a href="\${f.blobUrl}" download="\${safeFilename}" style="background: #FFFFFF; color: #000000; border: 1px solid var(--border); text-decoration: none; padding: 9px 18px; border-radius: 0; font-size: 11px; font-weight: 800; font-family: var(--mono); white-space: nowrap; cursor: pointer; display: inline-block;">[ DOWNLOAD ]</a>
+            <button onclick="deleteReceivedFile(\${currentReceivedViewIndex})" style="background: transparent; color: #EF4444; border: 1px solid #EF4444; padding: 9px 18px; border-radius: 0; font-size: 11px; font-weight: 800; font-family: var(--mono); white-space: nowrap; cursor: pointer;">[ DELETE ]</button>
+            \${hasMultiple ? \`<button onclick="downloadAllReceived()" style="background: transparent; color: #FFFFFF; border: 1px solid var(--border); padding: 9px 18px; border-radius: 0; font-size: 11px; font-weight: 800; font-family: var(--mono); white-space: nowrap; cursor: pointer;">[ DOWNLOAD ALL ]</button>\` : ''}
+          </div>
+        </div>
+      \`;
+
+      const previewAllBtn = document.getElementById('btn-preview-all');
+      if (previewAllBtn) {
+        state.photoIndices = [];
+        state.receivedFiles.forEach((f2, idx2) => {
+          const isImg2 = (f2.mimeType && f2.mimeType.startsWith('image/')) || f2.filename.match(/\\.(jpg|jpeg|png|gif|webp|heic|bmp)\$/i);
+          if (isImg2) state.photoIndices.push(idx2);
+        });
+        if (state.photoIndices.length > 0) {
+          previewAllBtn.style.display = 'inline-block';
+          previewAllBtn.innerText = \`[ PREVIEW ALL PHOTOS (\${state.photoIndices.length}) ]\`;
+        } else {
+          previewAllBtn.style.display = 'none';
+        }
+      }
+    }
+
+    let currentLightboxIndex = 0;
+
+    function openPhotoLightbox(index) {
+      if (!state.receivedFiles || state.receivedFiles.length === 0) return;
+      currentLightboxIndex = index;
+      if (currentLightboxIndex < 0) currentLightboxIndex = 0;
+      if (currentLightboxIndex >= state.receivedFiles.length) currentLightboxIndex = state.receivedFiles.length - 1;
+      updatePhotoLightboxView();
+      document.getElementById('photo-lightbox').style.display = 'flex';
+      window.addEventListener('keydown', handlePhotoLightboxKey);
+    }
+
+    function updatePhotoLightboxView() {
+      const item = state.receivedFiles[currentLightboxIndex];
+      if (!item) return;
+
+      document.getElementById('lightbox-counter').innerText = \`\${currentLightboxIndex + 1} / \${state.receivedFiles.length}\`;
+      document.getElementById('lightbox-title').innerText = item.filename;
+
+      const dlBtn = document.getElementById('lightbox-download-btn');
+      dlBtn.href = item.blobUrl;
+      dlBtn.download = item.filename;
+
+      const isImage = (item.mimeType && item.mimeType.startsWith('image/')) || item.filename.match(/\\.(jpg|jpeg|png|gif|webp|heic|bmp)\$/i);
+      const imgEl = document.getElementById('lightbox-image');
+      const nonImgEl = document.getElementById('lightbox-nonimage');
+
+      if (isImage) {
+        imgEl.src = item.blobUrl;
+        imgEl.style.display = 'block';
+        nonImgEl.style.display = 'none';
+      } else {
+        imgEl.style.display = 'none';
+        nonImgEl.style.display = 'block';
+        document.getElementById('lightbox-nonimage-name').innerText = item.filename;
+        const nonImgDl = document.getElementById('lightbox-nonimage-download');
+        nonImgDl.href = item.blobUrl;
+        nonImgDl.download = item.filename;
+      }
+
+      const strip = document.getElementById('lightbox-thumb-strip');
+      if (strip) {
+        strip.innerHTML = '';
+        state.receivedFiles.forEach((f, idx) => {
+          const thumbIsImg = (f.mimeType && f.mimeType.startsWith('image/')) || f.filename.match(/\\.(jpg|jpeg|png|gif|webp|heic|bmp)\$/i);
+          if (thumbIsImg) {
+            const img = document.createElement('img');
+            img.className = 'thumb-item' + (idx === currentLightboxIndex ? ' active' : '');
+            img.src = f.blobUrl;
+            img.onclick = () => {
+              currentLightboxIndex = idx;
+              updatePhotoLightboxView();
+            };
+            strip.appendChild(img);
+          }
+        });
+      }
+    }
+
+    function changePhotoLightbox(delta) {
+      if (!state.receivedFiles || state.receivedFiles.length === 0) return;
+      currentLightboxIndex += delta;
+      if (currentLightboxIndex < 0) currentLightboxIndex = state.receivedFiles.length - 1;
+      if (currentLightboxIndex >= state.receivedFiles.length) currentLightboxIndex = 0;
+      updatePhotoLightboxView();
+    }
+
+    function closePhotoLightbox() {
+      window.removeEventListener('keydown', handlePhotoLightboxKey);
+      document.getElementById('photo-lightbox').style.display = 'none';
+      window.removeEventListener('keydown', handlePhotoLightboxKey);
+    }
+
+    function handlePhotoLightboxKey(e) {
+      if (e.key === 'ArrowLeft') changePhotoLightbox(-1);
+      if (e.key === 'ArrowRight') changePhotoLightbox(1);
+      if (e.key === 'Escape') closePhotoLightbox();
+    }
+
+    function cancelTransfer() {
+      if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+        state.ws.send(JSON.stringify({ type: 'cancelled' }));
+      }
+      resetToPaired();
+    }
+
+    function resetToPaired() {
+      state.currentTransfer = null;
+      if (state.sendQueue.length > 0) {
+        processNextInQueue();
+      } else {
+        setPhase('paired');
+        updateQueueDisplay();
+      }
+    }
+
+    function updateProgressDisplay(filename, size, pct) {
+      document.getElementById('transfer-filename').innerText = filename;
+      document.getElementById('transfer-size').innerText = formatSize(size);
+      document.getElementById('transfer-pct').innerText = \`\${pct}%\`;
+      const prog = document.getElementById('transfer-progress');
+      if (prog) prog.value = pct;
+      const fillBar = document.getElementById('progress-fill-bar');
+      if (fillBar) fillBar.style.width = pct + '%';
+    }
+
+    function formatSize(bytes) {
+      if (!bytes || bytes <= 0 || isNaN(bytes)) return '0 B';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    const phoneState = {
+      sessionId: null,
+      ws: null,
+      cryptoKey: null,
+      currentTransfer: null,
+      sendQueue: [],
+      receivedFiles: [],
+      videoStream: null,
+      scanFrameId: null,
+      receiveWatchdog: null,
+      sendWatchdog: null,
+      rtcPeerConnection: null,
+      rtcDataChannel: null
+    };
+
+    function initPhoneMode() {
+      const pcEl = document.getElementById('pc-mode-container');
+      const phoneEl = document.getElementById('phone-mode-container');
+      if (pcEl) pcEl.style.display = 'none';
+      if (phoneEl) phoneEl.style.display = 'flex';
+
+      if (/android/i.test(navigator.userAgent)) {
+        const btn = document.getElementById('android-apk-btn');
+        if (btn) btn.style.display = 'block';
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const s = params.get('s');
+      const e = params.get('e');
+      if (s && /^[a-zA-Z0-9]{12}\$/.test(s)) {
+        if (e && parseInt(e, 10) < Date.now()) {
+          alert("QR/Link expired. Please scan a fresh QR code from PC terminal.");
+          phoneShowScreen('scanner');
+          phoneStartCamera();
+          return;
+        }
+        phoneProceedToConnected(s);
+      } else {
+        const saved = localStorage.getItem('doctransit_phone_session_id');
+        if (saved) {
+          phoneProceedToConnected(saved);
+        } else {
+          phoneShowScreen('scanner');
+          phoneStartCamera();
+        }
+      }
+    }
+
+    function phoneShowScreen(screenName) {
+      const sc = document.getElementById('phone-screen-scanner');
+      const co = document.getElementById('phone-screen-connected');
+      const dn = document.getElementById('phone-screen-done');
+      if (sc) sc.style.display = (screenName === 'scanner') ? 'flex' : 'none';
+      if (co) co.style.display = (screenName === 'connected') ? 'flex' : 'none';
+      if (dn) dn.style.display = (screenName === 'done') ? 'flex' : 'none';
+    }
+
+    async function phoneStartCamera() {
+      const video = document.getElementById('phone-video');
+      const msg = document.getElementById('phone-camera-msg');
+      if (msg) msg.style.display = 'block';
+      try {
+        phoneState.videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (video) {
+          video.srcObject = phoneState.videoStream;
+          video.setAttribute('playsinline', true);
+          video.play();
+          if (msg) msg.style.display = 'none';
+          phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);
+        }
+      } catch (err) {
+        console.warn("Camera permission blocked or unavailable:", err);
+        if (msg) msg.innerText = "Camera access denied. Please enter the 12-character ID manually above.";
+      }
+    }
+
+    function phoneStopCamera() {
+      if (phoneState.scanFrameId) {
+        cancelAnimationFrame(phoneState.scanFrameId);
+        phoneState.scanFrameId = null;
+      }
+      if (phoneState.videoStream) {
+        phoneState.videoStream.getTracks().forEach(track => track.stop());
+        phoneState.videoStream = null;
+      }
+    }
+
+    function phoneScanLoop() {
+      const video = document.getElementById('phone-video');
+      if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);
+        return;
+      }
+      // Reuse a single canvas to avoid GC pressure on every frame (BUG-08 fix)
+      if (!window._scanCanvas) {
+        window._scanCanvas = document.createElement('canvas');
+        window._scanCtx = window._scanCanvas.getContext('2d');
+      }
+      const canvas = window._scanCanvas;
+      const ctx = window._scanCtx;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
+
+      if (code && code.data) {
+        let sessionId = null;
+        try {
+          const parsed = JSON.parse(code.data);
+          if (parsed && parsed.s) {
+            if (parsed.e && parsed.e < Date.now()) {
+              alert("QR code expired. Please refresh the PC terminal.");
+              phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);
+              return;
+            }
+            sessionId = parsed.s;
+          }
+        } catch (e) {
+          try {
+            const url = new URL(code.data);
+            const sParam = url.searchParams.get('s');
+            const eParam = url.searchParams.get('e');
+            if (sParam) {
+              if (eParam && parseInt(eParam, 10) < Date.now()) {
+                alert("QR code expired. Please refresh the PC terminal.");
+                phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);
+                return;
+              }
+              sessionId = sParam;
+            }
+          } catch (e2) {
+            if (/^[a-zA-Z0-9]{12}\$/.test(code.data.trim())) {
+              sessionId = code.data.trim();
+            }
+          }
+        }
+
+        if (sessionId) {
+          phoneStopCamera();
+          phoneProceedToConnected(sessionId);
+          return;
+        }
+      }
+      phoneState.scanFrameId = requestAnimationFrame(phoneScanLoop);
+    }
+
+    function phoneConnectManual() {
+      const input = document.getElementById('phone-manual-id');
+      if (!input) return;
+      const val = input.value.trim();
+      if (!/^[a-zA-Z0-9]{12}\$/.test(val)) {
+        alert("Please enter a valid 12-character Session ID");
+        return;
+      }
+      phoneStopCamera();
+      phoneProceedToConnected(val);
+    }
+
+    async function phoneProceedToConnected(sessionId) {
+      phoneState.sessionId = sessionId;
+      localStorage.setItem('doctransit_phone_session_id', sessionId);
+      phoneShowScreen('connected');
+      const infoEl = document.getElementById('phone-session-info');
+      if (infoEl) infoEl.innerText = \`SESSION ID: \${sessionId}\`;
+      phoneSetStatus(false, 'CONNECTING TO PC TERMINAL...');
+
+      try {
+        phoneState.cryptoKey = await deriveAESKey(sessionId);
+      } catch (e) {
+        console.error("Failed to derive encryption key on phone:", e);
+      }
+
+      if (phoneState.ws) {
+        const old = phoneState.ws;
+        old.onclose = null;
+        try { old.close(); } catch (e) {}
+      }
+
+      const wsUrl = WORKER_URL.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
+      const ws = new WebSocket(\`\${wsUrl}/session/\${sessionId}/phone\`);
+      ws.binaryType = 'arraybuffer';
+      phoneState.ws = ws;
+
+      ws.onopen = () => {
+        phoneSetStatus(true, 'CONNECTED TO PC TERMINAL');
+      };
+
+      ws.onmessage = async (event) => {
+        if (typeof event.data === 'string') {
+          const msg = JSON.parse(event.data);
+        if (msg.type === 'transfer_init' && (!msg.total_chunks || msg.total_chunks <= 0)) {
+          console.error('Invalid transfer_init: total_chunks must be > 0');
+          if (phoneState.ws) phoneState.ws.send(JSON.stringify({ type: 'error', message: 'Invalid transfer size' }));
+          return;
+        }
+          phoneHandleTextMessage(msg);
+        } else {
+          let buffer = event.data;
+          if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+          await phoneHandleIncomingBinaryChunk(buffer);
+        }
+      };
+
+      ws.onclose = () => {
+        phoneSetStatus(false, 'DISCONNECTED');
+      };
+    }
+
+    function phoneSetStatus(active, text) {
+      const dot = document.getElementById('phone-status-dot');
+      const txt = document.getElementById('phone-status-text');
+      if (dot) {
+        if (active) dot.classList.add('active');
+        else dot.classList.remove('active');
+      }
+      if (txt) txt.innerText = text;
+    }
+
+    async function phoneInitWebRTC() {
+      if (phoneState.rtcPeerConnection) {
+        phoneState.rtcPeerConnection.close();
+      }
+      
+      const config = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      };
+      
+      const pc = new RTCPeerConnection(config);
+      phoneState.rtcPeerConnection = pc;
+      
+      pc.onicecandidate = (event) => {
+        if (event.candidate && phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+          phoneState.ws.send(JSON.stringify({ type: 'webrtc_ice', candidate: event.candidate }));
+        }
+      };
+      
+      pc.onconnectionstatechange = () => {
+        console.log('WebRTC state (Phone mode):', pc.connectionState);
+      };
+
+      const dc = pc.createDataChannel('fileTransfer', { negotiated: true, id: 0 });
+      dc.binaryType = 'arraybuffer';
+      dc.onopen = () => {
+        console.log('WebRTC DataChannel OPEN (Phone mode)');
+        phoneState.rtcDataChannel = dc;
+      };
+      dc.onclose = () => {
+        console.log('WebRTC DataChannel CLOSED (Phone mode)');
+        phoneState.rtcDataChannel = null;
+      };
+      dc.onmessage = async (event) => {
+        if (typeof event.data !== 'string') {
+          let buffer = event.data;
+          if (buffer instanceof Blob) buffer = await buffer.arrayBuffer();
+          await phoneHandleIncomingBinaryChunk(buffer);
+        }
+      };
+    }
+
+    async function phoneHandleTextMessage(msg) {
+      if (msg.type === 'paired') {
+        phoneSetStatus(true, 'CONNECTED TO PC TERMINAL');
+      } else if (msg.type === 'ready') {
+        if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {
+          phoneStartSendingChunks();
+        }
+      } else if (msg.type === 'text_message') {
+        appendChatMessage('PEER', msg.text);
+      } else if (msg.type === 'webrtc_offer') {
+        phoneInitWebRTC();
+        await phoneState.rtcPeerConnection.setRemoteDescription(msg.sdp);
+        const answer = await phoneState.rtcPeerConnection.createAnswer();
+        await phoneState.rtcPeerConnection.setLocalDescription(answer);
+        if (phoneState.ws) phoneState.ws.send(JSON.stringify({ type: 'webrtc_answer', sdp: phoneState.rtcPeerConnection.localDescription }));
+      } else if (msg.type === 'webrtc_answer') {
+        if (phoneState.rtcPeerConnection) await phoneState.rtcPeerConnection.setRemoteDescription(msg.sdp);
+      } else if (msg.type === 'webrtc_ice') {
+        if (phoneState.rtcPeerConnection && msg.candidate) {
+          try { await phoneState.rtcPeerConnection.addIceCandidate(msg.candidate); } catch(e) {}
+        }
+      } else if (msg.type === 'ack') {
+        if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {
+          phoneHandleAck(msg.chunk_index);
+        }
+      } else if (msg.type === 'transfer_init') {
+        if (phoneState.currentTransfer) {
+          phoneState.incomingTransferQueue = phoneState.incomingTransferQueue || [];
+          phoneState.incomingTransferQueue.push(msg);
+          return;
+        }
+        phoneState.currentTransfer = {
+          direction: 'receiving',
+          filename: msg.filename || 'received_file',
+          size: typeof msg.size === 'number' ? msg.size : 0,
+          total_chunks: typeof msg.total_chunks === 'number' ? msg.total_chunks : 0,
+          mime_type: msg.mime_type || 'application/octet-stream',
+          receivedChunks: 0,
+          chunksData: new Array(typeof msg.total_chunks === 'number' ? msg.total_chunks : 0)
+        };
+        document.getElementById('phone-transfer-area').style.display = 'flex';
+        document.getElementById('phone-dropzone').style.display = 'none';
+        phoneUpdateProgressDisplay(phoneState.currentTransfer.filename, phoneState.currentTransfer.size, 0);
+        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+          phoneState.ws.send(JSON.stringify({ type: 'ready' }));
+        }
+      } else if (msg.type === 'cancelled') {
+        alert('Transfer cancelled by PC terminal');
+        phoneResetToConnected();
+      }
+    }
+
+    async function phoneHandleIncomingBinaryChunk(buffer) {
+      const transfer = phoneState.currentTransfer;
+      if (!transfer || transfer.direction !== 'receiving') return;
+
+      try {
+        const result = await decryptChunk(buffer, phoneState.cryptoKey, transfer.receivedChunks);
+        if (phoneState.currentTransfer !== transfer) return;
+        const idx = typeof result.chunkIndex === 'number' ? result.chunkIndex : 0;
+        transfer.chunksData[idx] = new Blob([result.plaintext]);
+        transfer.receivedChunks++;
+
+        const pct = Math.min(100, Math.round((transfer.receivedChunks / transfer.total_chunks) * 100));
+        phoneUpdateProgressDisplay(transfer.filename, transfer.size, pct);
+
+        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+          phoneState.ws.send(JSON.stringify({ type: 'ack', chunk_index: idx }));
+        }
+
+        if (transfer.receivedChunks === transfer.total_chunks && phoneState.currentTransfer === transfer) {
+          const finalBlob = new Blob(transfer.chunksData, { type: transfer.mime_type });
+          transfer.chunksData = null;
+
+          if (transfer.filename === 'message.txt' && transfer.size < 50 * 1024) {
+            const text = await finalBlob.text();
+            appendChatMessage('PEER', text);
+            phoneState.currentTransfer = null;
+            phoneShowScreen('connected');
+            document.getElementById('phone-dropzone').style.display = 'flex';
+            document.getElementById('phone-transfer-area').style.display = 'none';
+            return;
+          }
+
+          const blobUrl = URL.createObjectURL(finalBlob);
+
+          try {
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = transfer.filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          } catch (e) {}
+
+          const downloadBtn = document.getElementById('phone-download-btn');
+          if (downloadBtn) {
+            downloadBtn.href = blobUrl;
+            downloadBtn.download = transfer.filename;
+          }
+
+          phoneState.currentTransfer = null;
+          if (phoneState.incomingTransferQueue && phoneState.incomingTransferQueue.length > 0) {
+            const nextMsg = phoneState.incomingTransferQueue.shift();
+            phoneHandleTextMessage(nextMsg);
+          } else if (phoneState.sendQueue && phoneState.sendQueue.length > 0) {
+            phoneProcessNextInQueue();
+          } else {
+            phoneShowScreen('done');
+            document.getElementById('phone-done-message').innerText = 'RECEIVED FROM PC!';
+            document.getElementById('phone-done-subtext').innerText = transfer.filename;
+          }
+        }
+      } catch (err) {
+        if (phoneState.currentTransfer !== transfer) return;
+        console.error('Failed to decrypt incoming chunk on phone:', err);
+        phoneState.currentTransfer = null;
+        if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+          phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+        }
+        if (phoneState.sendQueue.length > 0) {
+          phoneProcessNextInQueue();
+        } else {
+          phoneShowScreen('connected');
+          document.getElementById('phone-status-text').innerText = 'ERROR (DECRYPTION)';
+        }
+      }
+    }
+
+    function phoneHandleFilesSelected(event) {
+      const files = event.target.files ? Array.from(event.target.files) : [];
+      if (files.length === 0) return;
+      phoneState.sendQueue.push(...files);
+      event.target.value = '';
+      if (!phoneState.currentTransfer) {
+        phoneProcessNextInQueue();
+      }
+    }
+
+    function phoneProcessNextInQueue() {
+      if (phoneState.sendQueue.length === 0) {
+        phoneResetToConnected();
+        return;
+      }
+      const file = phoneState.sendQueue.shift();
+      phoneInitiateSendFile(file);
+    }
+
+    function phoneInitiateSendFile(file) {
+      const totalChunks = Math.max(1, Math.ceil(file.size / (32 * 1024)));
+      phoneState.currentTransfer = {
+        direction: 'sending',
+        file: file,
+        filename: file.name,
+        size: file.size,
+        total_chunks: totalChunks,
+        sentChunks: 0
+      };
+
+      document.getElementById('phone-dropzone').style.display = 'none';
+      document.getElementById('phone-transfer-area').style.display = 'flex';
+      phoneUpdateProgressDisplay(file.name, file.size, 0);
+
+      if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+        phoneState.ws.send(JSON.stringify({
+          type: 'transfer_init',
+          filename: file.name,
+          size: file.size,
+          total_chunks: totalChunks,
+          mime_type: file.type || 'application/octet-stream'
+        }));
+      }
+    }
+
+    async function phoneStartSendingChunks() {
+      if (!phoneState.currentTransfer || phoneState.currentTransfer.direction !== 'sending') return;
+      phoneState.currentTransfer.nextIndex = 0;
+      phoneState.currentTransfer.sentChunks = 0;
+      phoneState.currentTransfer.isProcessing = false;
+      phoneStreamNextSendingChunk();
+    }
+
+    async function phoneStreamNextSendingChunk() {
+      const transfer = phoneState.currentTransfer;
+      if (!transfer || transfer.direction !== 'sending' || transfer.isProcessing) return;
+      transfer.isProcessing = true;
+
+      try {
+        const usingWebRTC = phoneState.rtcDataChannel && phoneState.rtcDataChannel.readyState === 'open';
+        let maxWindow;
+        if (usingWebRTC) {
+          maxWindow = 256;
+        } else {
+          const sizeMB = transfer.size / (1024 * 1024);
+          if (sizeMB < 10) maxWindow = 64;
+          else if (sizeMB < 50) maxWindow = 32;
+          else maxWindow = 16;
+        }
+        while (phoneState.currentTransfer === transfer &&
+               transfer.nextIndex < transfer.total_chunks &&
+               (transfer.nextIndex - transfer.sentChunks) < maxWindow) {
+
+          const chunkIndex = transfer.nextIndex;
+          transfer.nextIndex++;
+
+          let arrayBuffer, encrypted;
+          try {
+            const offset = chunkIndex * 32 * 1024;
+            const slice = transfer.file.slice(offset, offset + 32 * 1024);
+            arrayBuffer = await slice.arrayBuffer();
+            encrypted = await encryptChunk(arrayBuffer, phoneState.cryptoKey, chunkIndex);
+          } catch (err) {
+            console.error("Failed to read or encrypt chunk:", err);
+            phoneState.currentTransfer = null;
+            if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+              phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+            }
+            if (phoneState.sendQueue.length > 0) {
+              phoneProcessNextInQueue();
+            } else {
+              phoneShowScreen('connected');
+              document.getElementById('phone-status-text').innerText = 'ERROR READING FILE';
+            }
+            return;
+          }
+
+          if (phoneState.rtcDataChannel && phoneState.rtcDataChannel.readyState === 'open') {
+            phoneState.rtcDataChannel.send(encrypted);
+          } else if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+            phoneState.ws.send(encrypted);
+          }
+
+          if (phoneState.senderStallTimer) clearTimeout(phoneState.senderStallTimer);
+          phoneState.senderStallTimer = setTimeout(() => {
+            if (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') {
+              console.warn(\`Phone sender stalled waiting for ACK\`);
+              phoneState.currentTransfer = null;
+              if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+                phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+              }
+              if (phoneState.sendQueue.length > 0) {
+                phoneProcessNextInQueue();
+              } else {
+                phoneShowScreen('connected');
+                document.getElementById('phone-status-text').innerText = 'STALLED - RETRY';
+              }
+            }
+          }, 15000);
+        }
+      } finally {
+        if (phoneState.currentTransfer === transfer) {
+          transfer.isProcessing = false;
+          if ((transfer.nextIndex - transfer.sentChunks) < 256 && transfer.nextIndex < transfer.total_chunks) {
+            phoneStreamNextSendingChunk();
+          }
+        }
+      }
+    }
+
+    function phoneHandleAck(chunkIndex) {
+      if (phoneState.senderStallTimer) {
+        clearTimeout(phoneState.senderStallTimer);
+        phoneState.senderStallTimer = null;
+      }
+      const transfer = phoneState.currentTransfer;
+      if (!transfer || transfer.direction !== 'sending') return;
+
+      transfer.sentChunks++;
+      const pct = Math.min(100, Math.round((transfer.sentChunks / transfer.total_chunks) * 100));
+      phoneUpdateProgressDisplay(transfer.filename, transfer.size, pct);
+
+      if (transfer.sentChunks >= transfer.total_chunks) {
+        phoneState.currentTransfer = null;
+        if (phoneState.sendQueue.length > 0) {
+          phoneProcessNextInQueue();
+        } else {
+          phoneShowScreen('done');
+          document.getElementById('phone-done-message').innerText = 'SENT TO PC TERMINAL!';
+          document.getElementById('phone-done-subtext').innerText = transfer.filename;
+        }
+      } else {
+        phoneStreamNextSendingChunk();
+      }
+    }
+
+    function phoneCancelTransfer() {
+      if (phoneState.ws && phoneState.ws.readyState === WebSocket.OPEN) {
+        phoneState.ws.send(JSON.stringify({ type: 'cancelled' }));
+      }
+      phoneResetToConnected();
+    }
+
+    function phoneResetToConnected() {
+      phoneState.currentTransfer = null;
+      if (phoneState.sendQueue.length > 0) {
+        phoneProcessNextInQueue();
+      } else {
+        phoneShowScreen('connected');
+        document.getElementById('phone-dropzone').style.display = 'flex';
+        document.getElementById('phone-transfer-area').style.display = 'none';
+      }
+    }
+
+    function phoneUpdateProgressDisplay(filename, size, pct) {
+      const title = document.getElementById('phone-transfer-title');
+      const nameEl = document.getElementById('phone-transfer-filename');
+      const pctEl = document.getElementById('phone-transfer-pct');
+      const progEl = document.getElementById('phone-transfer-progress');
+      if (title) title.innerText = (phoneState.currentTransfer && phoneState.currentTransfer.direction === 'sending') ? 'SENDING TO PC TERMINAL...' : 'RECEIVING FROM PC TERMINAL...';
+      if (nameEl) nameEl.innerText = filename;
+      if (pctEl) pctEl.innerText = \`\${pct}%\`;
+      if (progEl) progEl.value = pct;
+      const phoneFill = document.getElementById('phone-transfer-bar');
+      if (phoneFill) phoneFill.style.width = pct + '%';
+    }
+
+    let currentChatRole = 'pc';
+    let unreadChatCount = 0;
+
+    function openChatModal(role) {
+      if (role) currentChatRole = role;
+      document.getElementById('chat-modal').style.display = 'flex';
+      unreadChatCount = 0;
+      updateChatBadges();
+      const input = document.getElementById('chat-modal-input');
+      if (input) input.focus();
+      const container = document.getElementById('chat-modal-messages');
+      if (container) container.scrollTop = container.scrollHeight;
+    }
+
+    function closeChatModal() {
+      document.getElementById('chat-modal').style.display = 'none';
+    }
+
+    function clearChatMessages() {
+      unreadChatCount = 0;
+      updateChatBadges();
+      closeChatModal();
+      const list = document.getElementById('chat-modal-messages');
+      if (list) {
+        list.innerHTML = '<div id="chat-empty-state" style="margin: auto; color: var(--text-3); font-family: var(--mono); font-size: 12px; text-align: center;">No messages in this session yet.</div>';
+      }
+    }
+
+    function updateChatBadges() {
+      const pcBadge = document.getElementById('pc-chat-badge');
+      const phoneBadge = document.getElementById('phone-chat-badge');
+      if (unreadChatCount > 0) {
+        if (pcBadge) { pcBadge.style.display = 'inline-block'; pcBadge.innerText = \`\${unreadChatCount} NEW\`; }
+        if (phoneBadge) { phoneBadge.style.display = 'inline-block'; phoneBadge.innerText = \`\${unreadChatCount} NEW\`; }
+      } else {
+        if (pcBadge) pcBadge.style.display = 'none';
+        if (phoneBadge) phoneBadge.style.display = 'none';
+      }
+    }
+
+    function appendChatMessage(sender, text) {
+      const emptyState = document.getElementById('chat-empty-state');
+      if (emptyState) emptyState.remove();
+
+      const list = document.getElementById('chat-modal-messages');
+      if (!list) return;
+
+      const isMe = sender === 'YOU';
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.alignItems = isMe ? 'flex-end' : 'flex-start';
+      wrapper.style.width = '100%';
+
+      const tag = document.createElement('span');
+      tag.style.fontFamily = 'var(--mono)';
+      tag.style.fontSize = '10px';
+      tag.style.color = 'var(--text-3)';
+      tag.style.marginBottom = '4px';
+      tag.innerText = isMe ? '[ YOU ]' : '[ PEER ]';
+
+      const msgDiv = document.createElement('div');
+      msgDiv.style.padding = '10px 14px';
+      msgDiv.style.background = isMe ? 'var(--surface-2)' : '#18181B';
+      msgDiv.style.border = isMe ? '1px solid var(--border)' : '1px solid #3F3F46';
+      msgDiv.style.fontFamily = 'var(--mono)';
+      msgDiv.style.fontSize = '13px';
+      msgDiv.style.color = '#FFFFFF';
+      msgDiv.style.whiteSpace = 'pre-wrap';
+      msgDiv.style.maxWidth = '85%';
+      msgDiv.style.wordBreak = 'break-word';
+      msgDiv.style.borderRadius = '0';
+      msgDiv.textContent = text;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.innerText = '[ COPY ]';
+      copyBtn.style.marginTop = '4px';
+      copyBtn.style.background = 'transparent';
+      copyBtn.style.border = 'none';
+      copyBtn.style.color = 'var(--text-2)';
+      copyBtn.style.fontSize = '10px';
+      copyBtn.style.fontFamily = 'var(--mono)';
+      copyBtn.style.cursor = 'pointer';
+      copyBtn.style.padding = '0';
+      copyBtn.onclick = (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(text);
+        copyBtn.innerText = '[ COPIED! ]';
+        setTimeout(() => { copyBtn.innerText = '[ COPY ]'; }, 1500);
+      };
+
+      wrapper.appendChild(tag);
+      wrapper.appendChild(msgDiv);
+      wrapper.appendChild(copyBtn);
+      list.appendChild(wrapper);
+
+      setTimeout(() => {
+        list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+      }, 50);
+
+      const modal = document.getElementById('chat-modal');
+      if (!modal || modal.style.display === 'none') {
+        if (!isMe) {
+          unreadChatCount++;
+          updateChatBadges();
+        }
+      }
+    }
+
+    function sendModalChatMessage() {
+      const input = document.getElementById('chat-modal-input');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+
+      const socket = currentChatRole === 'phone' ? phoneState.ws : state.ws;
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'text_message', text: text }));
+        appendChatMessage('YOU', text);
+      }
+      input.value = '';
+    }
+  </script>
+</body>
+</html>
+`;

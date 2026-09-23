@@ -12,6 +12,7 @@ import { INSTALL_HTML } from "./install_html";
 import { MANIFEST_JSON } from "./manifest_json";
 import { SW_JS } from "./sw_js";
 import { ICON_192_BASE64, ICON_512_BASE64 } from "./icon_png";
+import { PREVIEW_JPG_BASE64 } from "./preview_jpg";
 import { QR_MIN_JS } from "./qr_min_js";
 import { JS_QR } from "./js_qr";
 import { HTML5_QRCODE } from "./html5_qrcode";
@@ -122,9 +123,38 @@ export default {
         const bin = Uint8Array.from(atob(ICON_512_BASE64), c => c.charCodeAt(0));
         return new Response(bin, { status: 200, headers: { "Content-Type": "image/png", "Access-Control-Allow-Origin": "*" } });
       }
+      if (path === "/preview.jpg") {
+        const bin = Uint8Array.from(atob(PREVIEW_JPG_BASE64), c => c.charCodeAt(0));
+        return new Response(bin, { status: 200, headers: { "Content-Type": "image/jpeg", "Access-Control-Allow-Origin": "*" } });
+      }
       if (path === "/join" || path === "/join.html") {
         const noCache = { "Cache-Control": "no-cache, no-store, must-revalidate" };
         return corsResponse(INDEX_HTML, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", ...noCache } });
+      }
+      if (path === "/sitemap.xml") {
+        const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${url.origin}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${url.origin}/phone.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${url.origin}/install.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>`;
+        return new Response(sitemap, { status: 200, headers: { "Content-Type": "application/xml; charset=utf-8" } });
+      }
+      if (path === "/robots.txt") {
+        const robots = `User-agent: *\nAllow: /\nSitemap: ${url.origin}/sitemap.xml`;
+        return new Response(robots, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
     }
 

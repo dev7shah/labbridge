@@ -1,1 +1,216 @@
-export const INSTALL_HTML = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\" />\n  <title>DocTransit \u2014 Universal Installer</title>\n  <meta property=\"og:title\" content=\"DocTransit\">\n  <meta property=\"og:description\" content=\"Zero-cloud P2P encrypted file transfer for your local network and beyond.\">\n  <meta property=\"og:image\" content=\"https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg\">\n  <meta property=\"og:url\" content=\"https://doctransit.in/\">\n  <meta name=\"twitter:card\" content=\"summary_large_image\">\n  <style>\n    :root {\n      --bg:           #000000;\n      --surface:      #09090B;\n      --surface-2:    #121214;\n      --border:       #27272A;\n      --primary:      #FFFFFF;\n      --text:         #FFFFFF;\n      --text-2:       #A1A1AA;\n      --text-3:       #52525B;\n      --mono:         'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;\n    }\n\n    * {\n      box-sizing: border-box;\n      margin: 0;\n      padding: 0;\n      -webkit-tap-highlight-color: transparent;\n    }\n\n    body {\n      background: var(--bg);\n      color: var(--text);\n      font-family: var(--mono);\n      min-height: 100vh;\n      display: flex;\n      flex-direction: column;\n      padding: 0;\n      margin: 0;\n    }\n\n    .container {\n      width: 100%;\n      min-height: 100vh;\n      max-width: 100%;\n      background: #000000;\n      border: none;\n      border-radius: 0;\n      padding: 40px 60px;\n      display: flex;\n      flex-direction: column;\n      justify-content: space-between;\n      flex: 1;\n      gap: 40px;\n    }\n\n    @media (max-width: 800px) {\n      .container {\n        padding: 24px 20px;\n        gap: 28px;\n      }\n    }\n\n    header {\n      display: flex;\n      align-items: center;\n      justify-content: space-between;\n      padding-bottom: 24px;\n      border-bottom: 1px solid var(--border);\n    }\n\n    .brand {\n      display: flex;\n      align-items: center;\n      gap: 16px;\n    }\n\n    .brand img {\n      width: 44px;\n      height: 44px;\n      border-radius: 0;\n      border: 1px solid var(--border);\n    }\n\n    .brand-name {\n      font-family: var(--mono);\n      font-size: 24px;\n      font-weight: 800;\n      color: var(--text);\n      letter-spacing: -0.5px;\n    }\n\n    .grid-sections {\n      display: grid;\n      grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));\n      gap: 32px;\n      flex: 1;\n      align-items: stretch;\n      width: 100%;\n    }\n\n    .section-box {\n      background: var(--surface-2);\n      border: 1px solid var(--border);\n      padding: 36px;\n      display: flex;\n      flex-direction: column;\n      justify-content: space-between;\n      gap: 28px;\n    }\n\n    .section-title {\n      font-size: 18px;\n      font-weight: 800;\n      color: #FFFFFF;\n      letter-spacing: 2px;\n      text-transform: uppercase;\n    }\n\n    .btn-download {\n      background: #FFFFFF;\n      color: #000000;\n      border: 1px solid var(--border);\n      padding: 24px;\n      font-family: var(--mono);\n      font-size: 18px;\n      font-weight: 800;\n      cursor: pointer;\n      text-decoration: none;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      gap: 14px;\n      text-transform: uppercase;\n      letter-spacing: 1px;\n    }\n\n    .btn-download:hover { opacity: 0.9; }\n\n    .step-list {\n      display: flex;\n      flex-direction: column;\n      gap: 16px;\n      margin-top: 12px;\n    }\n\n    .step-item {\n      display: flex;\n      gap: 14px;\n      font-size: 16px;\n      color: var(--text-2);\n      line-height: 1.7;\n    }\n\n    .step-num {\n      color: #FFFFFF;\n      font-weight: 800;\n      flex-shrink: 0;\n    }\n\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <header>\n      <div class=\"brand\">\n        <img src=\"logo.png\" alt=\"DocTransit Logo\" />\n        <div>\n          <div class=\"brand-name\">DOCTRANSIT INSTALLER</div>\n        </div>\n      </div>\n    </header>\n\n    <div class=\"grid-sections\">\n      <div class=\"section-box\">\n        <div style=\"display: flex; flex-direction: column; gap: 18px;\">\n          <div class=\"section-title\">[ ANDROID SINGLE-CLICK INSTALL ]</div>\n          <p style=\"font-size: 16px; color: var(--text-2); line-height: 1.7;\">\n            Download and install the native DocTransit APK directly to your Android device for zero-latency offline background syncing.\n          </p>\n        </div>\n        <a href=\"doctransit-app.apk\" download=\"doctransit-app.apk\" class=\"btn-download\">\n          <span>[ DOWNLOAD DOCTRANSIT APK (~80 MB) ]</span>\n        </a>\n      </div>\n\n      <div class=\"section-box\">\n        <div style=\"display: flex; flex-direction: column; gap: 18px;\">\n          <div class=\"section-title\">[ IPHONE & IOS PROGRESSIVE WEB APP SETUP ]</div>\n          <p style=\"font-size: 16px; color: var(--text-2); line-height: 1.7;\">\n            On Apple iOS, DocTransit runs natively from Safari as a Progressive Web App with local Files app access and instant camera pairing.\n          </p>\n          <div class=\"step-list\">\n            <div class=\"step-item\">\n              <span class=\"step-num\">[ 01 ]</span>\n              <span>Open <strong style=\"color: #FFFFFF;\">phone.html</strong> in Safari on your iPhone or iPad.</span>\n            </div>\n            <div class=\"step-item\">\n              <span class=\"step-num\">[ 02 ]</span>\n              <span>Tap the <strong style=\"color: #FFFFFF;\">Share</strong> button at the bottom of the Safari toolbar.</span>\n            </div>\n            <div class=\"step-item\">\n              <span class=\"step-num\">[ 03 ]</span>\n              <span>Select <strong style=\"color: #FFFFFF;\">Add to Home Screen</strong>. DocTransit will now launch cleanly without browser borders or address bars.</span>\n            </div>\n          </div>\n        </div>\n      </div>\n    </div>\n\n  </div>\n</body>\n</html>\n";
+export const INSTALL_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DocTransit — Install</title>
+  <meta name="description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
+  <meta property="og:title" content="DocTransit">
+  <meta property="og:description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
+  <meta property="og:image" content="https://doctransit.in/preview.jpg">
+  <meta property="og:url" content="https://doctransit.in/">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    :root {
+      --bg:           #000000;
+      --surface:      #09090B;
+      --surface-2:    #121214;
+      --border:       #27272A;
+      --primary:      #FFFFFF;
+      --text:         #FFFFFF;
+      --text-2:       #A1A1AA;
+      --text-3:       #52525B;
+      --mono:         'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      margin: 0;
+    }
+
+    .container {
+      width: 100%;
+      min-height: 100vh;
+      max-width: 100%;
+      background: #000000;
+      border: none;
+      border-radius: 0;
+      padding: 40px 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+      gap: 40px;
+    }
+
+    @media (max-width: 800px) {
+      .container {
+        padding: 24px 20px;
+        gap: 28px;
+      }
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand img {
+      width: 44px;
+      height: 44px;
+      border-radius: 0;
+      border: 1px solid var(--border);
+    }
+
+    .brand-name {
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .grid-sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+      gap: 32px;
+      flex: 1;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .section-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .btn-download {
+      background: #FFFFFF;
+      color: #000000;
+      border: 1px solid var(--border);
+      padding: 24px;
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-download:hover { opacity: 0.9; }
+
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 14px;
+      font-size: 16px;
+      color: var(--text-2);
+      line-height: 1.7;
+    }
+
+    .step-num {
+      color: #FFFFFF;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <img src="logo.png" alt="DocTransit Logo" />
+        <div>
+          <div class="brand-name">DOCTRANSIT INSTALLER</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid-sections">
+      <div class="section-box">
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+          <div class="section-title">[ ANDROID SINGLE-CLICK INSTALL ]</div>
+          <p style="font-size: 16px; color: var(--text-2); line-height: 1.7;">
+            Download and install the native DocTransit APK directly to your Android device for zero-latency offline background syncing.
+          </p>
+        </div>
+        <a href="doctransit.apk" download="doctransit.apk" class="btn-download">
+          <span>[ DOWNLOAD DOCTRANSIT APK (~80 MB) ]</span>
+        </a>
+      </div>
+
+      <div class="section-box">
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+          <div class="section-title">[ IPHONE & IOS PROGRESSIVE WEB APP SETUP ]</div>
+          <p style="font-size: 16px; color: var(--text-2); line-height: 1.7;">
+            On Apple iOS, DocTransit runs natively from Safari as a Progressive Web App with local Files app access and instant camera pairing.
+          </p>
+          <div class="step-list">
+            <div class="step-item">
+              <span class="step-num">[ 01 ]</span>
+              <span>Open <strong style="color: #FFFFFF;">phone.html</strong> in Safari on your iPhone or iPad.</span>
+            </div>
+            <div class="step-item">
+              <span class="step-num">[ 02 ]</span>
+              <span>Tap the <strong style="color: #FFFFFF;">Share</strong> button at the bottom of the Safari toolbar.</span>
+            </div>
+            <div class="step-item">
+              <span class="step-num">[ 03 ]</span>
+              <span>Select <strong style="color: #FFFFFF;">Add to Home Screen</strong>. DocTransit will now launch cleanly without browser borders or address bars.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
+`;

@@ -48,6 +48,9 @@ const ALLOWED_MESSAGE_TYPES = new Set([
   "connection_request",
   "connection_accept",
   "connection_decline",
+  "webrtc_offer",
+  "webrtc_answer",
+  "webrtc_ice",
 ]);
 
 /** Minimal validation: the parsed JSON must be a non-null object with a valid `type` string. */

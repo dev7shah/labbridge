@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:path/path.dart' as p;
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 
 import '../models/file_item.dart';
@@ -42,12 +43,18 @@ class TransferService extends ChangeNotifier {
   final CryptoService _cryptoService = CryptoService();
   final DbService _dbService = DbService();
   static const _uuid = Uuid();
-  static const int _chunkSize = 512 * 1024; // 512KB
+  static const int _chunkSize = 32 * 1024; // 32KB for WebRTC compatibility
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
   Uint8List? _derivedKey;
   String? _currentSessionId;
   String? get currentSessionId => _currentSessionId;
+
+  // WebRTC
+  RTCPeerConnection? _peerConnection;
+  RTCDataChannel? _dataChannel;
+  bool _isProcessingBinary = false;
+  final List<Uint8List> _binaryQueue = [];
 
   // Stream controllers for UI updates
   final _connectionStatusController = StreamController<ConnectionStatus>.broadcast();
@@ -135,15 +142,81 @@ class TransferService extends ChangeNotifier {
     }
   }
 
+  Future<void> _initWebRTC() async {
+    if (_peerConnection != null) {
+      await _peerConnection!.close();
+      _peerConnection = null;
+    }
+
+    final configuration = {
+      'iceServers': [
+        {'urls': 'stun:stun.l.google.com:19302'}
+      ]
+    };
+
+    _peerConnection = await createPeerConnection(configuration);
+
+    _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
+      if (_channel != null) {
+        _channel!.sink.add(json.encode({
+          'type': 'webrtc_ice',
+          'candidate': {
+            'candidate': candidate.candidate,
+            'sdpMid': candidate.sdpMid,
+            'sdpMLineIndex': candidate.sdpMLineIndex
+          }
+        }));
+      }
+    };
+
+    _peerConnection!.onConnectionState = (RTCPeerConnectionState state) {
+      debugPrint('WebRTC Connection State: $state');
+    };
+
+    final RTCDataChannelInit dataChannelDict = RTCDataChannelInit()
+      ..negotiated = true
+      ..id = 0;
+    
+    _dataChannel = await _peerConnection!.createDataChannel('fileTransfer', dataChannelDict);
+    
+    _dataChannel!.onDataChannelState = (RTCDataChannelState state) {
+      debugPrint('WebRTC DataChannel State: $state');
+      if (state == RTCDataChannelState.RTCDataChannelClosed) {
+        _dataChannel = null;
+      }
+    };
+
+    _dataChannel!.onMessage = (RTCDataChannelMessage message) {
+      if (message.isBinary) {
+        _binaryQueue.add(message.binary);
+        _processBinaryQueue();
+      }
+    };
+  }
+
+  Future<void> _processBinaryQueue() async {
+    if (_isProcessingBinary) return;
+    _isProcessingBinary = true;
+    try {
+      while (_binaryQueue.isNotEmpty) {
+        final buffer = _binaryQueue.removeAt(0);
+        await _handleBinaryMessage(buffer);
+      }
+    } finally {
+      _isProcessingBinary = false;
+    }
+  }
+
   void _handleMessage(dynamic message) {
     if (message is String) {
       _handleJsonMessage(message);
     } else if (message is List<int>) {
-      _handleBinaryMessage(Uint8List.fromList(message));
+      _binaryQueue.add(Uint8List.fromList(message));
+      _processBinaryQueue();
     }
   }
 
-  void _handleJsonMessage(String message) {
+  void _handleJsonMessage(String message) async {
     try {
       final data = json.decode(message) as Map<String, dynamic>;
       final type = data['type'] as String?;
@@ -165,9 +238,35 @@ class TransferService extends ChangeNotifier {
             _ackedChunks++;
           }
           break;
+        case 'webrtc_offer':
+          await _initWebRTC();
+          await _peerConnection!.setRemoteDescription(RTCSessionDescription(data['sdp']['sdp'], data['sdp']['type']));
+          final answer = await _peerConnection!.createAnswer();
+          await _peerConnection!.setLocalDescription(answer);
+          if (_channel != null) {
+            final desc = await _peerConnection!.getLocalDescription();
+            _channel!.sink.add(json.encode({
+              'type': 'webrtc_answer',
+              'sdp': {'sdp': desc!.sdp, 'type': desc.type}
+            }));
+          }
+          break;
+        case 'webrtc_answer':
+          if (_peerConnection != null) {
+            await _peerConnection!.setRemoteDescription(RTCSessionDescription(data['sdp']['sdp'], data['sdp']['type']));
+          }
+          break;
+        case 'webrtc_ice':
+          if (_peerConnection != null && data['candidate'] != null) {
+            try {
+              final cand = data['candidate'];
+              await _peerConnection!.addCandidate(RTCIceCandidate(cand['candidate'], cand['sdpMid'], cand['sdpMLineIndex']));
+            } catch (e) {
+              debugPrint('ICE error: $e');
+            }
+          }
+          break;
         case 'paired':
-          // Server confirms the PC peer is (re)connected. Clear any
-          // 'reconnecting' state left over from a prior peer_disconnected.
           if (_status == ConnectionStatus.reconnecting) {
             _status = ConnectionStatus.connected;
             _connectionStatusController.add(ConnectionStatus.connected);
@@ -483,7 +582,11 @@ class TransferService extends ChangeNotifier {
             0,
           );
           _ackCompleter = Completer<int>();
-          _channel?.sink.add(encrypted);
+          if (_dataChannel != null && _dataChannel!.state == RTCDataChannelState.RTCDataChannelOpen) {
+            _dataChannel!.send(RTCDataChannelMessage.fromBinary(encrypted));
+          } else {
+            _channel?.sink.add(encrypted);
+          }
           try {
             await _ackCompleter!.future.timeout(const Duration(seconds: 15));
           } on StateError {
@@ -501,40 +604,55 @@ class TransferService extends ChangeNotifier {
           ));
           notifyListeners();
         } else {
-          while (true) {
-            final chunk = await raf.read(_chunkSize);
-            if (chunk.isEmpty) break;
+          _ackedChunks = 0;
+          // Adaptive window: WebRTC direct = 256, relay scales by file size
+          final bool usingWebRTC = _dataChannel != null && _dataChannel!.state == RTCDataChannelState.RTCDataChannelOpen;
+          final int maxWindow;
+          if (usingWebRTC) {
+            maxWindow = 256;
+          } else {
+            final sizeMB = fileSize / (1024 * 1024);
+            if (sizeMB < 10) { maxWindow = 64; }
+            else if (sizeMB < 50) { maxWindow = 32; }
+            else { maxWindow = 16; }
+          }
+          while (chunkIndex < totalChunks) {
+            if ((chunkIndex - _ackedChunks) < maxWindow) {
+              final chunk = await raf.read(_chunkSize);
+              if (chunk.isEmpty) break;
 
-            final encrypted = _cryptoService.encryptChunk(
-              chunk,
-              _derivedKey!,
-              chunkIndex,
-            );
+              final encrypted = _cryptoService.encryptChunk(
+                chunk,
+                _derivedKey!,
+                chunkIndex,
+              );
 
-            _ackCompleter = Completer<int>();
-            _channel?.sink.add(encrypted);
+              if (_dataChannel != null && _dataChannel!.state == RTCDataChannelState.RTCDataChannelOpen) {
+                await _dataChannel!.send(RTCDataChannelMessage.fromBinary(encrypted));
+              } else {
+                _channel?.sink.add(encrypted);
+              }
 
-            // Wait for peer to ACK this chunk
-            try {
-              await _ackCompleter!.future.timeout(const Duration(seconds: 15));
-            } on StateError {
-              // Disconnected intentionally
-              return;
+              transferred += chunk.length;
+              chunkIndex++;
+
+              _progressController.add(TransferProgress(
+                fileName: fileName,
+                totalBytes: fileSize,
+                transferredBytes: transferred,
+                totalChunks: totalChunks,
+                completedChunks: chunkIndex,
+                direction: TransferDirection.sent,
+              ));
+              notifyListeners();
+            } else {
+              // Wait for ACK
+              await Future.delayed(const Duration(milliseconds: 10));
             }
-            _ackCompleter = null;
-
-            transferred += chunk.length;
-            chunkIndex++;
-
-            _progressController.add(TransferProgress(
-              fileName: fileName,
-              totalBytes: fileSize,
-              transferredBytes: transferred,
-              totalChunks: totalChunks,
-              completedChunks: chunkIndex,
-              direction: TransferDirection.sent,
-            ));
-            notifyListeners();
+          }
+          // Wait for all ACKs to arrive
+          while (_ackedChunks < totalChunks) {
+            await Future.delayed(const Duration(milliseconds: 10));
           }
         }
       } finally {

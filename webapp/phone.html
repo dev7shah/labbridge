@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>DocTransit — Phone PWA</title>
+  <title>DocTransit — Seamless File Transfer</title>
+  <meta name="description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
   <meta property="og:title" content="DocTransit">
-  <meta property="og:description" content="Zero-cloud P2P encrypted file transfer for your local network and beyond.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/dev7shah/doctransit/main/preview.jpg">
+  <meta property="og:description" content="DocTransit is a blazing fast, zero-cloud peer-to-peer file transfer utility. Securely send files of any size directly between devices on your local network and beyond, with no installation required.">
+  <meta property="og:image" content="https://doctransit.in/preview.jpg">
   <meta property="og:url" content="https://doctransit.in/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="manifest" href="manifest.json" />
@@ -469,7 +470,7 @@
   </header>
 
   <!-- Permanent Android APK Button -->
-  <a id="android-apk-btn" href="doctransit-app.apk" download="doctransit-app.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
+  <a id="android-apk-btn" href="https://github.com/dev7shah/labbridge/releases/latest/download/doctransit.apk" download="doctransit.apk" style="display: none; width: 100%; text-align: center; background: #FFFFFF; color: #000000; padding: 14px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; border: 1px solid var(--border); margin-bottom: 16px;">
     [ DOWNLOAD NATIVE ANDROID APK ]
   </a>
 
@@ -975,7 +976,7 @@
       if (inputEl) inputEl.value = '';
     }
 
-    function handleTextMessage(msg) {
+    async function handleTextMessage(msg) {
       if (msg.type === 'folder_request') {
         if (state.ws && state.ws.readyState === WebSocket.OPEN) {
           state.ws.send(JSON.stringify({
@@ -1416,7 +1417,7 @@
       }
       const file = state.phoneSendQueue.shift();
       
-      const CHUNK_SIZE = 512 * 1024;
+      const CHUNK_SIZE = 32 * 1024;
       const total_chunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
 
       state.sending = {
@@ -1457,16 +1458,26 @@
       sending.isProcessing = true;
 
       try {
+        const usingWebRTC = state.rtcDataChannel && state.rtcDataChannel.readyState === 'open';
+        let maxWindow;
+        if (usingWebRTC) {
+          maxWindow = 256;
+        } else {
+          const sizeMB = (sending.file ? sending.file.size : 0) / (1024 * 1024);
+          if (sizeMB < 10) maxWindow = 64;
+          else if (sizeMB < 50) maxWindow = 32;
+          else maxWindow = 16;
+        }
         while (state.sending === sending && 
                sending.nextIndex < sending.total_chunks && 
-               (sending.nextIndex - sending.acked) < 16) {
+               (sending.nextIndex - sending.acked) < maxWindow) {
           
           if (!state.ws || state.ws.readyState !== WebSocket.OPEN) break;
           
           const chunkIndex = sending.nextIndex;
           sending.nextIndex++;
 
-          const CHUNK_SIZE = 512 * 1024;
+          const CHUNK_SIZE = 32 * 1024;
           const offset = chunkIndex * CHUNK_SIZE;
           const slice = sending.file.slice(offset, offset + CHUNK_SIZE);
 
@@ -1488,7 +1499,9 @@
       } finally {
         if (state.sending === sending) {
           sending.isProcessing = false;
-          if ((sending.nextIndex - sending.acked) < 16 && sending.nextIndex < sending.total_chunks) {
+          const usingWebRTC2 = state.rtcDataChannel && state.rtcDataChannel.readyState === 'open';
+          const mw = usingWebRTC2 ? 256 : ((sending.file ? sending.file.size : 0) / (1024 * 1024) < 10 ? 64 : (sending.file ? sending.file.size : 0) / (1024 * 1024) < 50 ? 32 : 16);
+          if ((sending.nextIndex - sending.acked) < mw && sending.nextIndex < sending.total_chunks) {
             streamNextSendingChunk();
           }
         }
