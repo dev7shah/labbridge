@@ -9,9 +9,17 @@ compatibility_date = "2025-01-01"
 name = "SESSIONS"
 class_name = "Session"
 
+[[durable_objects.bindings]]
+name = "CHANNELS"
+class_name = "Channel"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Session"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Channel"]
 
 [vars]
 MAX_SESSION_MINUTES = "5"

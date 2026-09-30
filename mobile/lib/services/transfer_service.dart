@@ -209,10 +209,14 @@ class TransferService extends ChangeNotifier {
 
   void _handleMessage(dynamic message) {
     if (message is String) {
+      debugPrint('[LB] _handleMessage: TEXT (${message.length} chars) ${message.substring(0, message.length > 80 ? 80 : message.length)}');
       _handleJsonMessage(message);
     } else if (message is List<int>) {
+      debugPrint('[LB] _handleMessage: BINARY (${message.length} bytes, type=${message.runtimeType})');
       _binaryQueue.add(Uint8List.fromList(message));
       _processBinaryQueue();
+    } else {
+      debugPrint('[LB] _handleMessage: UNKNOWN type=${message.runtimeType}');
     }
   }
 
@@ -386,13 +390,23 @@ class TransferService extends ChangeNotifier {
   }
 
   Future<void> _handleBinaryMessage(Uint8List data) async {
-    if (_tempSink == null || _derivedKey == null) return;
+    if (_tempSink == null || _derivedKey == null) {
+      debugPrint('[LB] _handleBinaryMessage: SKIP (tempSink=${_tempSink != null}, derivedKey=${_derivedKey != null}, dataLen=${data.length})');
+      return;
+    }
+
+    debugPrint('[LB] _handleBinaryMessage: dataLen=${data.length}, receivedChunks=$_receivedChunks, totalChunks=$_totalChunks');
+    if (data.length >= 12) {
+      debugPrint('[LB] First 12 bytes (IV): ${data.sublist(0, 12).map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+    }
 
     try {
       // Decrypt chunk
       final result = _cryptoService.decryptChunk(data, _derivedKey!, _receivedChunks);
       final decrypted = result.plaintext;
       final chunkIndex = result.chunkIndex;
+
+      debugPrint('[LB] Decrypted OK: chunkIndex=$chunkIndex, plainLen=${decrypted.length}');
 
       // Store chunk in buffer to tolerate out-of-order delivery
       _chunkBuffer[chunkIndex] = decrypted;
@@ -456,9 +470,12 @@ class TransferService extends ChangeNotifier {
         ));
         notifyListeners();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[LB] DECRYPT FAILED: $e');
+      debugPrint('[LB] Stack: ${stack.toString().split('\n').take(5).join('\n')}');
+      debugPrint('[LB] Data length: ${data.length}, key length: ${_derivedKey?.length}');
       _errorController.add('Decryption failed: $e');
-      _channel?.sink.add(json.encode({'type': 'cancelled'}));
+      _channel?.sink.add(json.encode({'type': 'cancelled', 'reason': e.toString().substring(0, (e.toString().length > 100 ? 100 : e.toString().length))}));
       _cancelCurrentReceive(notify: true);
     }
   }
@@ -628,7 +645,13 @@ class TransferService extends ChangeNotifier {
               );
 
               if (_dataChannel != null && _dataChannel!.state == RTCDataChannelState.RTCDataChannelOpen) {
-                await _dataChannel!.send(RTCDataChannelMessage.fromBinary(encrypted));
+                try {
+                  // Slight throttle for large chunks to avoid buffer overflow in flutter_webrtc
+                  if (chunkIndex % 16 == 0) await Future.delayed(const Duration(milliseconds: 10));
+                  await _dataChannel!.send(RTCDataChannelMessage.fromBinary(encrypted));
+                } catch (e) {
+                  _channel?.sink.add(encrypted);
+                }
               } else {
                 _channel?.sink.add(encrypted);
               }

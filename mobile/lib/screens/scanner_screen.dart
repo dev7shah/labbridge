@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../services/transfer_service.dart';
+import '../services/channel_service.dart';
 import '../main.dart';
 
 class ScannerScreen extends StatefulWidget {
@@ -61,11 +62,23 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
           expiry = data['e'] as int?;
         } catch (_) {
           final uri = Uri.tryParse(value);
-          if (uri != null && uri.queryParameters.containsKey('s')) {
-            sessionId = uri.queryParameters['s'];
-            final expiryStr = uri.queryParameters['e'];
-            if (expiryStr != null) {
-              expiry = int.tryParse(expiryStr);
+          if (uri != null) {
+            // Check for permanent channel URL: /c/<channelId>#<clientKey>
+            if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'c') {
+              final channelId = uri.pathSegments[1];
+              final clientKey = uri.fragment;
+              if (channelId.isNotEmpty && clientKey.isNotEmpty) {
+                _hasNavigated = true;
+                await _connectChannelAndReturn(channelId, clientKey);
+                return;
+              }
+            }
+            if (uri.queryParameters.containsKey('s')) {
+              sessionId = uri.queryParameters['s'];
+              final expiryStr = uri.queryParameters['e'];
+              if (expiryStr != null) {
+                expiry = int.tryParse(expiryStr);
+              }
             }
           }
         }
@@ -90,6 +103,15 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
       }
       _isProcessing = false;
     }
+  }
+
+  Future<void> _connectChannelAndReturn(String channelId, String clientKey) async {
+    final channelService = Provider.of<ChannelService>(context, listen: false);
+    await channelService.saveChannel(channelId, clientKey);
+    await channelService.connect(channelId, clientKey);
+    
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   Future<void> _connectAndReturn(String sessionId) async {
