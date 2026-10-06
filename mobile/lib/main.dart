@@ -3,11 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'services/db_service.dart';
 import 'services/transfer_service.dart';
-import 'services/channel_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/files_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/channel_screen.dart';
 
 class AppTheme {
   // Backgrounds (ContextL pure pitch black monochrome)
@@ -95,8 +93,6 @@ class IconBox extends StatelessWidget {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DbService().init();
-  final channelService = ChannelService();
-  await channelService.loadAndConnect();
   runApp(const DocTransitApp());
 }
 
@@ -108,7 +104,6 @@ class DocTransitApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransferService()),
-        ChangeNotifierProvider.value(value: ChannelService()),
       ],
       child: MaterialApp(
         title: 'DocTransit',
@@ -142,7 +137,6 @@ class _MainShellState extends State<MainShell> {
   final List<Widget> _screens = const [
     HomeScreen(),
     FilesScreen(),
-    ChannelScreen(),
     SettingsScreen(),
   ];
 
@@ -177,8 +171,7 @@ class _MainShellState extends State<MainShell> {
                   children: [
                     _buildNavItem(0, Icons.terminal_rounded, 'TERMINAL'),
                     _buildNavItem(1, Icons.folder_open_rounded, 'FILES'),
-                    _buildNavItem(2, Icons.rss_feed_rounded, 'CHANNELS'),
-                    _buildNavItem(3, Icons.settings_rounded, 'CONFIG'),
+                    _buildNavItem(2, Icons.settings_rounded, 'CONFIG'),
                   ],
                 ),
               ),

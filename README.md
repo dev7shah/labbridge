@@ -1,12 +1,8 @@
-# DocTransit
-
-<p align="center">
-  <img src="preview.jpg" alt="DocTransit Preview" width="100%">
-</p>
+# LabBridge (formerly DocTransit)
 
 Secure file transfer for students. Scan a QR on any lab PC to send files directly to your phone.
 
-No accounts. No cloud storage. Files go straight to your phone.
+No accounts. No cloud storage. Files go straight to your phone. Blazing fast peer-to-peer WebRTC data channels are used for local network transfers!
 
 ## Architecture
 
@@ -21,8 +17,7 @@ No accounts. No cloud storage. Files go straight to your phone.
 ```bash
 cd worker
 npm install
-npx wrangler login
-npx wrangler deploy
+npm run deploy
 ```
 
 Note your worker URL: `wss://doctransit.YOUR_SUBDOMAIN.workers.dev`

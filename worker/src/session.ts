@@ -486,8 +486,7 @@ export class Session extends DurableObject {
             ws.send(JSON.stringify({ type: "error", message: "Invalid transfer size or chunk count" }));
             return;
           }
-          // The frontend uses 32KB chunks. Max chunks for 500MB is 16000.
-          if (record.size > MAX_FILE_SIZE_BYTES || record.total_chunks > Math.ceil(MAX_FILE_SIZE_BYTES / (32 * 1024))) {
+          if (record.size > MAX_FILE_SIZE_BYTES || record.total_chunks > Math.ceil(MAX_FILE_SIZE_BYTES / (512 * 1024))) {
             ws.close(1008, "Transfer size exceeds 500MB limit");
             other?.close(1008, "Transfer size exceeds 500MB limit");
             return;

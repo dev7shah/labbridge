@@ -19,11 +19,16 @@ import { HTML5_QRCODE } from "./html5_qrcode";
 import { FFLATE_MIN_JS } from "./fflate_min_js";
 // Re-export the Durable Object class so wrangler can discover it
 export { Session } from "./session";
-export { Channel } from "./channel";
+
+export class Channel {
+  constructor(state: any, env: any) {}
+  async fetch(request: Request) {
+    return new Response('Not found', { status: 404 });
+  }
+}
 
 interface Env {
   SESSIONS: DurableObjectNamespace;
-  CHANNELS: DurableObjectNamespace;
   MAX_SESSION_MINUTES?: string;
   MAX_FILE_SIZE_MB?: string;
 }
@@ -157,37 +162,6 @@ export default {
       if (path === "/robots.txt") {
         const robots = `User-agent: *\nAllow: /\nSitemap: ${url.origin}/sitemap.xml`;
         return new Response(robots, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
-      }
-    }
-
-    // ── Channel Routes (Permanent Channels) ───────────────────────────
-    const channelMatch = path.match(/^\/c\/([a-zA-Z0-9_-]+)\/(ws|notify)$/);
-    if (channelMatch) {
-      const [, channelId, action] = channelMatch;
-      const doId = env.CHANNELS.idFromName(channelId);
-      const stub = env.CHANNELS.get(doId);
-      
-      if (action === "notify" && request.method === "POST") {
-        if (!checkRateLimit(`notify:${ip}`, 30, 60 * 1000)) {
-          return corsResponse("Rate limit exceeded", { status: 429 });
-        }
-        const res = await stub.fetch(request.url, request.clone());
-        const body = await res.text();
-        return corsResponse(body, { status: res.status });
-      }
-      
-      if (action === "ws" && request.method === "GET") {
-        if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-          return corsResponse("Expected WebSocket upgrade", { status: 426 });
-        }
-        if (!checkRateLimit(`c_ws:${ip}`, 60, 60 * 1000)) {
-          return corsResponse("Rate limit exceeded", { status: 429 });
-        }
-        // Forward the request to DO
-        const res = await stub.fetch(request.url, request.clone());
-        if (res.status === 101) return res;
-        const errBody = await res.text();
-        return corsResponse(errBody, { status: res.status, headers: res.headers });
       }
     }
 

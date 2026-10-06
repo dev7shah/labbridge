@@ -917,29 +917,6 @@
             </div>
             <button id="btn-share-pc-link" onclick="copyPcLink()" style="width: 100%; margin-top: 8px; background: transparent; color: var(--text-3); border: 1px solid var(--border); border-radius: 0; padding: 8px; font-family: var(--mono); font-size: 10px; font-weight: 800; cursor: pointer; letter-spacing: 0.5px; transition: border-color 0.15s, color 0.15s;">[ COPY SHAREABLE LINK ]</button>
           </div>
-          
-          <!-- Channels UI -->
-          <div style="width: 100%; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 4px;">
-            <div style="font-size: 10px; color: var(--text-3); letter-spacing: 1px; margin-bottom: 10px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              PERMANENT CHANNELS
-              <span title="Permanent Channels let you pair with a phone once and stay connected forever. Great for pushing logs and background tasks." style="cursor: help; color: #FFFFFF; font-weight: bold; background: #27272A; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; line-height: 14px; border: 1px solid #3F3F46; font-size: 10px;">i</span>
-            </div>
-            
-            <div id="channel-unpaired-ui">
-              <button onclick="createPermanentChannel()" style="width: 100%; background: #FFFFFF; color: #000000; border: 1px solid var(--border); border-radius: 0; padding: 10px 16px; font-family: var(--mono); font-size: 11px; font-weight: 800; cursor: pointer; letter-spacing: 0.5px;">[ CREATE PERMANENT CHANNEL ]</button>
-            </div>
-            
-            <div id="channel-active-ui" style="display: none; flex-direction: column; gap: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); padding: 8px 12px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div id="channel-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; box-shadow: 0 0 8px #EF4444;"></div>
-                  <span style="font-family: var(--mono); font-size: 11px; font-weight: 800; color: #FFFFFF;">CHANNEL <span id="channel-status-text">OFFLINE</span></span>
-                </div>
-                <button onclick="revokePermanentChannel()" style="background: transparent; color: #EF4444; border: 1px solid var(--border); font-family: var(--mono); font-size: 9px; font-weight: 800; padding: 4px 8px; cursor: pointer;">[ REVOKE ]</button>
-              </div>
-            </div>
-          </div>
-          
           <div id="rate-limit-error" style="display:none; color: #EF4444; border: 1px solid #EF4444; background: rgba(239, 68, 68, 0.12); padding: 12px 16px; font-family: var(--mono); font-size: 12px; font-weight: 800; text-align: center; margin-top: 14px; width: 100%;"></div>
         </div>
       </div>
@@ -1176,128 +1153,6 @@
       window.addEventListener('DOMContentLoaded', initPCMode);
     }
 
-    // --- Permanent Channel Logic ---
-    let channelWs = null;
-    let channelPingInterval = null;
-
-    function generateRandomHex(bytes) {
-      const array = new Uint8Array(bytes);
-      crypto.getRandomValues(array);
-      return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    async function createPermanentChannel() {
-      const channelId = generateRandomHex(16); // 128-bit
-      const hostKey = generateRandomHex(32);   // 256-bit
-      const clientKey = generateRandomHex(32); // 256-bit
-
-      localStorage.setItem('doctransit_channel_id', channelId);
-      localStorage.setItem('doctransit_channel_hostKey', hostKey);
-      localStorage.setItem('doctransit_channel_clientKey', clientKey);
-
-      await connectPermanentChannel(true);
-    }
-
-    function revokePermanentChannel() {
-      if (!confirm('Revoke this channel? Any paired devices will be permanently disconnected.')) return;
-      localStorage.removeItem('doctransit_channel_id');
-      localStorage.removeItem('doctransit_channel_hostKey');
-      localStorage.removeItem('doctransit_channel_clientKey');
-      
-      if (channelWs) {
-        channelWs.onclose = null;
-        try { channelWs.close(); } catch(e){}
-        channelWs = null;
-      }
-      if (channelPingInterval) {
-        clearInterval(channelPingInterval);
-        channelPingInterval = null;
-      }
-      
-      document.getElementById('channel-unpaired-ui').style.display = 'block';
-      document.getElementById('channel-active-ui').style.display = 'none';
-    }
-
-    async function connectPermanentChannel(isFirstInit = false) {
-      const channelId = localStorage.getItem('doctransit_channel_id');
-      const hostKey = localStorage.getItem('doctransit_channel_hostKey');
-      const clientKey = localStorage.getItem('doctransit_channel_clientKey');
-
-      if (!channelId || !hostKey || !clientKey) return;
-
-      document.getElementById('channel-unpaired-ui').style.display = 'none';
-      document.getElementById('channel-active-ui').style.display = 'flex';
-      
-      const statusText = document.getElementById('channel-status-text');
-      const statusDot = document.getElementById('channel-status-dot');
-      
-      statusText.innerText = 'CONNECTING...';
-      statusDot.style.background = '#F59E0B'; // yellow
-      statusDot.style.boxShadow = '0 0 8px #F59E0B';
-
-      let wsUrl = `${WORKER_URL}/c/${channelId}/ws?role=host&key=${hostKey}`;
-      if (isFirstInit) wsUrl += `&ck=${clientKey}`;
-
-      if (channelWs) {
-        channelWs.onclose = null;
-        try { channelWs.close(); } catch(e){}
-      }
-
-      channelWs = new WebSocket(wsUrl);
-
-      channelWs.onopen = () => {
-        statusText.innerText = 'ONLINE';
-        statusDot.style.background = '#22C55E'; // green
-        statusDot.style.boxShadow = '0 0 8px #22C55E';
-        
-        if (channelPingInterval) clearInterval(channelPingInterval);
-        channelPingInterval = setInterval(() => {
-          if (channelWs && channelWs.readyState === WebSocket.OPEN) {
-            channelWs.send('ping');
-          }
-        }, 25000);
-        
-        if (isFirstInit) {
-          // Show QR Code with the channel info
-          const pwaBase = HTTP_URL.replace('ws://', 'http://').replace('wss://', 'https://');
-          const qrPayload = `${pwaBase}/c/${channelId}#${clientKey}`;
-          prompt('Scan this URL in the DocTransit mobile app (or copy it):', qrPayload);
-        }
-      };
-
-      channelWs.onmessage = (event) => {
-        if (event.data === 'pong') return;
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'status') {
-             // Handle client status updates if needed
-          } else if (msg.type === 'text_message' || msg.text) {
-             appendChatMessage('CLIENT (CH)', msg.text || msg.body);
-          }
-        } catch(e) {
-          // Could be raw text or encrypted body. If it's a prompt from the client, we assume it's JSON or text.
-          appendChatMessage('CLIENT (CH)', event.data);
-        }
-      };
-
-      channelWs.onclose = () => {
-        statusText.innerText = 'OFFLINE';
-        statusDot.style.background = '#EF4444'; // red
-        statusDot.style.boxShadow = '0 0 8px #EF4444';
-        if (channelPingInterval) clearInterval(channelPingInterval);
-        
-        // Auto-reconnect with basic backoff (not fully exponential for brevity)
-        setTimeout(() => connectPermanentChannel(), 5000);
-      };
-    }
-
-    function checkPermanentChannel() {
-      const channelId = localStorage.getItem('doctransit_channel_id');
-      if (channelId) {
-        connectPermanentChannel();
-      }
-    }
-
     function initPCMode() {
       const pcEl = document.getElementById('pc-mode-container');
       const phoneEl = document.getElementById('phone-mode-container');
@@ -1306,7 +1161,6 @@
       createSession();
       setupDropzone();
       fetchNearbyDevices();
-      checkPermanentChannel();
       setInterval(fetchNearbyDevices, 4000);
     }
 
@@ -1944,9 +1798,7 @@
         }
 
       } else if (msg.type === 'cancelled') {
-        const reason = msg.reason || 'unknown';
-        alert(`Transfer cancelled by phone: ${reason}`);
-        state.currentTransfer = null;
+        alert('Transfer cancelled by phone');
         setPhase('paired');
       } else if (msg.type === 'disconnected') {
         handlePeerDisconnected();
@@ -2272,8 +2124,9 @@
             return;
           }
 
-          // DEBUG: Force WebSocket relay to diagnose WebRTC issues
-          if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          if (state.rtcDataChannel && state.rtcDataChannel.readyState === 'open') {
+            state.rtcDataChannel.send(encrypted);
+          } else if (state.ws && state.ws.readyState === WebSocket.OPEN) {
             state.ws.send(encrypted);
           }
           
@@ -2377,8 +2230,7 @@
         } else {
           setPhase('paired');
           updateQueueDisplay();
-          const errMsg = err.message ? err.message.substring(0,20) : 'DECRYPT';
-          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (ERROR: ${errMsg})`);
+          setStatus(true, `CONNECTED: ${state.connectedDevice.toUpperCase()} (ERROR)`);
         }
         return;
       }
